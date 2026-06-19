@@ -1,4 +1,4 @@
-import type { Action, PlayerId, Resolution, SkillId } from '@bo/rules';
+import type { Action, PlayerId, Resolution } from '@bo/rules';
 
 export type Phase = 'lobby' | 'playing' | 'gameOver';
 
@@ -8,7 +8,7 @@ export type GameMode = 'bojue';
 export interface RoomConfig {
   mode: GameMode;
   beatMs: number; // 每拍毫秒
-  bannedSkills: SkillId[]; // 禁招（被禁的攻击）
+  allowSpecials: boolean; // 开放超模特招（点波/推波/削波），默认 false
 }
 
 /** 公开玩家视图（每拍揭示后所有人可见；隐藏的只有「未揭示的当拍暗选」）。 */

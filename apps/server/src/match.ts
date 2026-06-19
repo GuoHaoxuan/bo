@@ -1,6 +1,7 @@
 import {
   resolve,
   newGame,
+  SPECIAL_SKILLS,
   type Action,
   type GameState,
   type PlayerId,
@@ -12,7 +13,7 @@ interface Seat {
   name: string;
 }
 
-const DEFAULT_CONFIG: RoomConfig = { mode: 'bojue', beatMs: 1800, bannedSkills: [] };
+const DEFAULT_CONFIG: RoomConfig = { mode: 'bojue', beatMs: 1800, allowSpecials: false };
 
 /**
  * 一局对战的**纯逻辑核心**（无网络、无定时器）：管座位、阶段、当拍暗选，
@@ -74,7 +75,8 @@ export class Match {
     if (beat !== this.state.beat) return;
     if (id < 0 || id >= this.seats.length) return;
     if (!this.state.players[id]!.alive) return;
-    if (action.kind === 'attack' && this.cfg.bannedSkills.includes(action.skill)) return; // 禁招
+    if (action.kind === 'attack' && !this.cfg.allowSpecials && SPECIAL_SKILLS.includes(action.skill))
+      return; // 未开放的超模特招
     this.pending.set(id, action);
   }
 

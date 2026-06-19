@@ -158,7 +158,7 @@ export class GameServer {
     let room = this.rooms.get(code);
     if (!room) {
       room = { match: new Match(), conns: new Map(), timer: null, bots: new Set() };
-      room.match.setConfig({ mode: 'bojue', beatMs: this.beatMs, bannedSkills: [] });
+      room.match.setConfig({ mode: 'bojue', beatMs: this.beatMs, allowSpecials: false });
       this.rooms.set(code, room);
     }
     return room;

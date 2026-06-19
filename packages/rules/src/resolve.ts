@@ -1,5 +1,5 @@
 import { whole, type Qi } from './qi';
-import { skillData, type TargetKind } from './skill';
+import { skillData, type SkillId, type TargetKind } from './skill';
 import {
   aliveIds,
   clearQi,
@@ -96,11 +96,13 @@ function outcomeOf(state: GameState): Outcome {
 
 interface Attacker {
   id: PlayerId;
+  skill: SkillId;
   cost: Qi;
   target: TargetKind;
+  counters: readonly SkillId[];
 }
 
-/** 基于「动作快照」同步结算（攻击同时落地）。返回 { deaths, dui }。 */
+/** 基于「动作快照」同步结算（先克、后互攻，攻击同时落地）。返回 { deaths, dui }。 */
 function resolveCombat(
   state: GameState,
   actions: Map<PlayerId, Action>,
@@ -112,16 +114,27 @@ function resolveCombat(
     if (rong.includes(id) || !state.players[id]!.alive) continue;
     if (act.kind === 'attack') {
       const a = skillData(act.skill).attack!;
-      attackers.push({ id, cost: a.cost, target: a.target });
+      attackers.push({ id, skill: act.skill, cost: a.cost, target: a.target, counters: a.counters });
     }
   }
-  const costOf = (pid: PlayerId): Qi | undefined =>
-    attackers.find((a) => a.id === pid)?.cost;
 
-  // 每个目标收到的攻击气耗列表
+  // 克：A 的招克 B 的招 → B 被克死、其招作废（克 > 互攻，无视气耗）。
+  const ke = new Set<PlayerId>();
+  for (const a of attackers) {
+    if (a.counters.length === 0) continue;
+    for (const b of attackers) {
+      if (a.id !== b.id && a.counters.includes(b.skill)) ke.add(b.id);
+    }
+  }
+  const dead = new Set<PlayerId>([...rong, ...ke]); // 不可作目标、其招作废
+  const live = attackers.filter((a) => !ke.has(a.id));
+  const costOf = (pid: PlayerId): Qi | undefined =>
+    live.find((a) => a.id === pid)?.cost;
+
+  // 每个目标收到的攻击气耗列表（仅未被克的攻击者落招）
   const incoming = new Map<PlayerId, Qi[]>();
-  for (const atkr of attackers) {
-    for (const t of targetsOf(atkr.id, atkr.target, state, actions, rong)) {
+  for (const atkr of live) {
+    for (const t of targetsOf(atkr.id, atkr.target, state, actions, dead)) {
       const arr = incoming.get(t) ?? [];
       arr.push(atkr.cost);
       incoming.set(t, arr);
@@ -129,7 +142,7 @@ function resolveCombat(
   }
 
   const fang = skillData('fang').defense!;
-  const deaths: PlayerId[] = [];
+  const deaths: PlayerId[] = [...ke]; // 被克死的先计入
   const dui: PlayerId[] = [];
   for (const pid of [...incoming.keys()].sort((a, b) => a - b)) {
     const costs = incoming.get(pid)!;
@@ -167,11 +180,11 @@ function targetsOf(
   target: TargetKind,
   state: GameState,
   actions: Map<PlayerId, Action>,
-  rong: PlayerId[],
+  dead: ReadonlySet<PlayerId>,
 ): PlayerId[] {
   const opps: PlayerId[] = [];
   for (let id = 0; id < state.players.length; id++) {
-    if (id !== attacker && state.players[id]!.alive && !rong.includes(id)) opps.push(id);
+    if (id !== attacker && state.players[id]!.alive && !dead.has(id)) opps.push(id);
   }
   if (target === 'selfOnly') return [];
   if (target === 'allOthers') return opps;

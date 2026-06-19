@@ -9,7 +9,7 @@ export function Arena({ view, submit }: { view: GameView; submit: (a: Action) =>
   const players = view.state?.players ?? [];
   const yourQi = players[view.you]?.qi ?? 0;
   const isOver = view.status === 'gameOver';
-  const banned = new Set<string>(view.state?.config.bannedSkills ?? []);
+  const allowSpecials = view.state?.config.allowSpecials ?? false;
 
   const hist = view.history;
   const latest = hist.length > 0 ? hist[hist.length - 1] : undefined;
@@ -110,13 +110,13 @@ export function Arena({ view, submit }: { view: GameView; submit: (a: Action) =>
       {!isOver && (
         <div className="actionwrap">
           <div className="actions">
-            {MOVES.filter((m) => m.action.kind !== 'attack' || !banned.has(m.action.skill)).map((m) => {
-              const afford = m.kind !== 'attack' || yourQi >= m.costWhole * 1000;
+            {MOVES.filter((m) => !m.special || allowSpecials).map((m) => {
+              const afford = m.kind !== 'attack' || yourQi >= m.costMilli;
               const disabled = view.submittedThisBeat || !afford;
               return (
                 <button key={m.key} className={`chip chip--${m.accent}`} disabled={disabled} onClick={() => submit(m.action)}>
                   {m.label}
-                  {m.kind === 'attack' ? <small className="chip__cost">{m.costWhole}气</small> : null}
+                  {m.kind === 'attack' ? <small className="chip__cost">{m.costMilli / 1000}气</small> : null}
                 </button>
               );
             })}

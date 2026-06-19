@@ -6,3 +6,6 @@ export const ZERO: Qi = 0;
 
 /** 整数气 → 毫气 */
 export const whole = (n: number): Qi => n * 1000;
+
+/** 0.1 气的整数倍 → 毫气。tenths(1)=100(0.1气)、tenths(5)=500(0.5气)。避免 whole(0.1) 的浮点误差。 */
+export const tenths = (n: number): Qi => n * 100;

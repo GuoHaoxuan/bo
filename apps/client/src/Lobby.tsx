@@ -1,8 +1,6 @@
 import { type ReactNode } from 'react';
 import type { RoomConfig } from '@bo/protocol';
-import type { SkillId } from '@bo/rules';
 import type { GameApi } from './useGame';
-import { MOVES } from './skills';
 
 const BEAT_PRESETS = [
   { ms: 1200, label: '飞快' },
@@ -11,8 +9,6 @@ const BEAT_PRESETS = [
   { ms: 2400, label: '慢' },
   { ms: 3000, label: '很慢' },
 ];
-
-const BANNABLE = MOVES.filter((m) => m.kind === 'attack'); // 空/小扫/全扫/pass/冲击波
 
 export function Lobby({ game }: { game: GameApi }) {
   const { view, setConfig, startGame } = game;
@@ -24,10 +20,6 @@ export function Lobby({ game }: { game: GameApi }) {
   const isSolo = view.room.startsWith('solo-');
 
   const update = (patch: Partial<RoomConfig>): void => setConfig({ ...cfg, ...patch });
-  const toggleBan = (skill: SkillId): void => {
-    const has = cfg.bannedSkills.includes(skill);
-    update({ bannedSkills: has ? cfg.bannedSkills.filter((s) => s !== skill) : [...cfg.bannedSkills, skill] });
-  };
 
   return (
     <div className="screen">
@@ -61,23 +53,17 @@ export function Lobby({ game }: { game: GameApi }) {
           ))}
         </Setting>
 
-        <Setting label="禁招">
-          {BANNABLE.map((m) => {
-            if (m.action.kind !== 'attack') return null;
-            const skill = m.action.skill;
-            const banned = cfg.bannedSkills.includes(skill);
-            return (
-              <button
-                key={m.key}
-                disabled={!isHost}
-                className={`chip${banned ? ' chip--red chip--selected' : ''}`}
-                onClick={() => toggleBan(skill)}
-              >
-                {m.label}
-                {banned ? ' 🚫' : ''}
-              </button>
-            );
-          })}
+        <Setting label="超模特招">
+          <button
+            disabled={!isHost}
+            className={`chip${cfg.allowSpecials ? ' chip--red chip--selected' : ''}`}
+            onClick={() => update({ allowSpecials: !cfg.allowSpecials })}
+          >
+            {cfg.allowSpecials ? '已开放 ✓' : '关闭'}
+          </button>
+          <span style={{ fontSize: 12, opacity: 0.6, alignSelf: 'center' }}>
+            点波 0.1气 · 推波克空 · 削波克小扫
+          </span>
         </Setting>
 
         <Setting label="模式">

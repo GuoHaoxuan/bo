@@ -72,16 +72,31 @@ describe('Match', () => {
     expect(m.tick()).toBeNull(); // gameOver
   });
 
-  it('banned skill is rejected (禁招 → 忽略 → 默认防)', () => {
+  it('超模特招默认禁用 → 提交被忽略 → 默认防', () => {
     const m = new Match();
-    m.setConfig({ mode: 'bojue', beatMs: 1800, bannedSkills: ['kong'] });
     m.addPlayer('A');
     m.addPlayer('B');
     m.start();
-    m.submit(0, 0, atk('kong')); // 被禁 → 忽略
+    m.submit(0, 0, atk('tuibo')); // 未开放 → 忽略
     m.submit(1, 0, charge);
     const r = m.tick();
     expect(r?.rong).toEqual([]); // 没真的出招，不会溶
     expect(m.publicState().players[0]!.alive).toBe(true);
+  });
+
+  it('开放超模特招后可用，推波克空打穿', () => {
+    const m = new Match();
+    m.setConfig({ mode: 'bojue', beatMs: 1800, allowSpecials: true });
+    m.addPlayer('A');
+    m.addPlayer('B');
+    m.start();
+    m.submit(0, 0, charge); // 各攒到 1 气
+    m.submit(1, 0, charge);
+    m.tick();
+    m.submit(0, 1, atk('tuibo')); // 推波(0.5) 克 空
+    m.submit(1, 1, atk('kong'));
+    const r = m.tick();
+    expect(r?.combatDeaths).toEqual([1]);
+    expect(m.publicState().winner).toBe(0);
   });
 });

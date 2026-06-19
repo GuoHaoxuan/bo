@@ -25,19 +25,9 @@ export function actionLabel(a: Action): string {
   return MOVES.find((m) => m.action.kind === 'attack' && m.action.skill === a.skill)?.label ?? a.skill;
 }
 
-export function actionPow(a: Action): string {
-  if (a.kind === 'charge') return '凝…';
-  if (a.kind === 'defend') return '铛!';
-  switch (a.skill) {
-    case 'chongjibo':
-      return '轰隆!!';
-    case 'pass':
-      return 'PASS!';
-    case 'quansao':
-      return '哗——!';
-    case 'xiaosao':
-      return '唰!';
-    default:
-      return '波!';
-  }
+export function actionDesc(a: Action): string {
+  if (a.kind === 'charge') return '蓄力 +1气';
+  if (a.kind === 'defend') return '防御';
+  const m = MOVES.find((x) => x.action.kind === 'attack' && x.action.skill === a.skill);
+  return m ? `攻击 ${m.costWhole}气` : '攻击';
 }

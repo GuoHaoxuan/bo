@@ -19,15 +19,18 @@ interface Room {
 }
 
 const BEAT_MS_DEFAULT = 3000;
+const REVEAL_MS_DEFAULT = 1800;
 
 /** WebSocket 传输层：管连接、房间、节拍定时器，把消息路由进 Match、把结果广播出去。 */
 export class GameServer {
   private wss: WebSocketServer | null = null;
   private readonly rooms = new Map<string, Room>();
   private readonly beatMs: number;
+  private readonly revealMs: number;
 
-  constructor(opts: { beatMs?: number } = {}) {
+  constructor(opts: { beatMs?: number; revealMs?: number } = {}) {
     this.beatMs = opts.beatMs ?? BEAT_MS_DEFAULT;
+    this.revealMs = opts.revealMs ?? REVEAL_MS_DEFAULT;
   }
 
   listen(port: number): Promise<number> {
@@ -42,7 +45,7 @@ export class GameServer {
   }
 
   close(): Promise<void> {
-    for (const r of this.rooms.values()) if (r.timer) clearInterval(r.timer);
+    for (const r of this.rooms.values()) if (r.timer) clearTimeout(r.timer);
     this.rooms.clear();
     const wss = this.wss;
     return new Promise((resolve) => (wss ? wss.close(() => resolve()) : resolve()));
@@ -88,11 +91,33 @@ export class GameServer {
     }
   }
 
-  private startRoom(code: string, room: Room): void {
+  private startRoom(_code: string, room: Room): void {
     room.match.start();
     this.sendRoomStateToAll(room);
+    this.beginBeat(room);
+  }
+
+  /** 开一拍：广播 beatStart（+ Bot 出招），等 beatMs 后结算。 */
+  private beginBeat(room: Room): void {
     this.announceBeat(room);
-    room.timer = setInterval(() => this.onBeat(room), this.beatMs);
+    room.timer = setTimeout(() => this.endBeat(room), this.beatMs);
+  }
+
+  /** 结算一拍 → 广播揭示，停顿 revealMs 让玩家看清，再开下一拍 / 公布结果。 */
+  private endBeat(room: Room): void {
+    const beat = room.match.currentBeat;
+    const resolution = room.match.tick();
+    if (!resolution) return;
+    const state = room.match.publicState();
+    this.broadcast(room, { type: 'resolution', beat, resolution, actions: [...room.match.lastActions], state });
+    if (room.match.currentPhase === 'gameOver') {
+      room.timer = setTimeout(() => {
+        this.broadcast(room, { type: 'gameOver', winner: state.winner, state });
+        room.timer = null;
+      }, this.revealMs);
+    } else {
+      room.timer = setTimeout(() => this.beginBeat(room), this.revealMs);
+    }
   }
 
   private announceBeat(room: Room): void {
@@ -121,23 +146,8 @@ export class GameServer {
     room.conns.delete(conn.id);
     if (room.conns.size === 0) {
       // 没真人了（含只剩 Bot）→ 清理房间
-      if (room.timer) clearInterval(room.timer);
+      if (room.timer) clearTimeout(room.timer);
       this.rooms.delete(conn.room);
-    }
-  }
-
-  private onBeat(room: Room): void {
-    const beat = room.match.currentBeat;
-    const resolution = room.match.tick();
-    if (!resolution) return;
-    const state = room.match.publicState();
-    this.broadcast(room, { type: 'resolution', beat, resolution, actions: [...room.match.lastActions], state });
-    if (room.match.currentPhase === 'gameOver') {
-      this.broadcast(room, { type: 'gameOver', winner: state.winner, state });
-      if (room.timer) clearInterval(room.timer);
-      room.timer = null;
-    } else {
-      this.announceBeat(room);
     }
   }
 

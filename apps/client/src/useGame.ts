@@ -17,6 +17,7 @@ export interface GameView {
   state: PublicState | null;
   beat: number;
   deadlineMs: number;
+  beatDurationMs: number;
   submittedThisBeat: boolean;
   reveal: Reveal | null;
   winner: number | null;
@@ -29,6 +30,7 @@ const INITIAL: GameView = {
   state: null,
   beat: 0,
   deadlineMs: 0,
+  beatDurationMs: 0,
   submittedThisBeat: false,
   reveal: null,
   winner: null,
@@ -88,7 +90,15 @@ function reduce(v: GameView, msg: ServerMessage): GameView {
     return { ...v, you: msg.you, state: msg.state, status };
   }
   if (msg.type === 'beatStart') {
-    return { ...v, status: 'playing', beat: msg.beat, deadlineMs: msg.deadlineMs, submittedThisBeat: false };
+    return {
+      ...v,
+      status: 'playing',
+      beat: msg.beat,
+      deadlineMs: msg.deadlineMs,
+      beatDurationMs: Math.max(1, msg.deadlineMs - Date.now()),
+      submittedThisBeat: false,
+      reveal: null, // 新一拍开始，撤掉上一拍的翻牌
+    };
   }
   if (msg.type === 'resolution') {
     return { ...v, state: msg.state, reveal: { beat: msg.beat, actions: msg.actions, resolution: msg.resolution } };

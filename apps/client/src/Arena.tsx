@@ -1,44 +1,32 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Action } from '@bo/rules';
-import type { GameView, Reveal } from './useGame';
-import { MOVES, actionLabel, actionPow } from './skills';
-
-const BEAT_TOTAL_MS = 3000;
+import type { GameView } from './useGame';
+import { MOVES, actionLabel, actionDesc } from './skills';
 
 export function Arena({ view, submit }: { view: GameView; submit: (a: Action) => void }) {
   const players = view.state?.players ?? [];
   const yourQi = players[view.you]?.qi ?? 0;
+  const reveal = view.reveal;
+  const isOver = view.status === 'gameOver';
+  const revealing = reveal !== null && view.status === 'playing';
 
-  // 节拍倒计时条
+  // 节拍倒计时条（只在输入窗口走；翻牌时清零）
+  const total = view.beatDurationMs || 3000;
   const [ratio, setRatio] = useState(1);
   useEffect(() => {
-    if (view.status !== 'playing') {
-      setRatio(1);
-      return;
+    if (view.status !== 'playing' || revealing) {
+      setRatio(revealing ? 0 : 1);
+      return undefined;
     }
     let raf = 0;
     const tick = () => {
       const left = view.deadlineMs - Date.now();
-      setRatio(Math.max(0, Math.min(1, left / BEAT_TOTAL_MS)));
+      setRatio(Math.max(0, Math.min(1, left / total)));
       raf = requestAnimationFrame(tick);
     };
     tick();
     return () => cancelAnimationFrame(raf);
-  }, [view.status, view.deadlineMs]);
-
-  // 揭示 SLAM（每拍结算后闪现 ~0.85s）
-  const [slam, setSlam] = useState<Reveal | null>(null);
-  const lastBeat = useRef(-1);
-  useEffect(() => {
-    const r = view.reveal;
-    if (r && r.beat !== lastBeat.current) {
-      lastBeat.current = r.beat;
-      setSlam(r);
-      const t = setTimeout(() => setSlam(null), 850);
-      return () => clearTimeout(t);
-    }
-    return undefined;
-  }, [view.reveal]);
+  }, [view.status, view.deadlineMs, revealing, total]);
 
   if (view.status === 'lobby') {
     return (
@@ -53,7 +41,6 @@ export function Arena({ view, submit }: { view: GameView; submit: (a: Action) =>
     );
   }
 
-  const isOver = view.status === 'gameOver';
   const result = !isOver
     ? null
     : view.winner === null
@@ -96,7 +83,7 @@ export function Arena({ view, submit }: { view: GameView; submit: (a: Action) =>
           <div className="actions">
             {MOVES.map((m) => {
               const afford = m.kind !== 'attack' || yourQi >= m.costWhole * 1000;
-              const disabled = view.submittedThisBeat || slam !== null || !afford;
+              const disabled = view.submittedThisBeat || revealing || !afford;
               return (
                 <button key={m.key} className={`chip chip--${m.accent}`} disabled={disabled} onClick={() => submit(m.action)}>
                   {m.label}
@@ -105,29 +92,30 @@ export function Arena({ view, submit }: { view: GameView; submit: (a: Action) =>
               );
             })}
           </div>
-          <p className="hint">{view.submittedThisBeat ? '已出招，等翻牌…' : '趁节拍拍下你的招！'}</p>
+          <p className="hint">
+            {revealing ? '翻牌中…' : view.submittedThisBeat ? '已出招，等翻牌…' : '趁节拍拍下你的招！'}
+          </p>
         </div>
       )}
 
-      {slam && (
+      {revealing && reveal && (
         <div className="slam">
+          <div className="slam__head pow">翻 牌!</div>
           <div className="slam__panels">
-            {slam.actions.map(({ id, action }) => (
+            {reveal.actions.map(({ id, action }) => (
               <div key={id} className="slam__cell pop-in">
                 <div className="slam__who">{players[id]?.name ?? `P${id}`}</div>
                 <div
-                  className="pow slam__pow"
+                  className="slam__move"
                   style={{ color: action.kind === 'attack' ? 'var(--red)' : 'var(--cyan)' }}
                 >
-                  {actionPow(action)}
+                  {actionLabel(action)}
                 </div>
-                <div className="slam__lbl">{actionLabel(action)}</div>
+                <div className="slam__desc">{actionDesc(action)}</div>
               </div>
             ))}
           </div>
-          {slam.resolution.combatDeaths.length + slam.resolution.rong.length > 0 && (
-            <div className="slam__ko pow pop-in">K.O.</div>
-          )}
+          <div className="slam__outcome pop-in">{outcomeText(reveal, players)}</div>
         </div>
       )}
 
@@ -143,6 +131,15 @@ export function Arena({ view, submit }: { view: GameView; submit: (a: Action) =>
       )}
     </div>
   );
+}
+
+function outcomeText(reveal: NonNullable<GameView['reveal']>, players: ReadonlyArray<{ name: string }>): string {
+  const name = (id: number): string => players[id]?.name ?? `P${id}`;
+  const out: string[] = [];
+  for (const id of reveal.resolution.rong) out.push(`${name(id)} 溶了（出招失败）`);
+  for (const id of reveal.resolution.combatDeaths) out.push(`${name(id)} 被打死!`);
+  for (const id of reveal.resolution.dui) out.push(`${name(id)} 被兑（清空气）`);
+  return out.length ? out.join('，') : '都安全，继续！';
 }
 
 function renderQi(milli: number): string {

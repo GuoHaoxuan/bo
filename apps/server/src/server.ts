@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net';
 import type { ClientMessage, ServerMessage } from '@bo/protocol';
 import type { PlayerId } from '@bo/rules';
 import { Match } from './match';
+import { botAction } from './bot';
 
 interface Conn {
   ws: WebSocket;
@@ -13,6 +14,7 @@ interface Conn {
 interface Room {
   match: Match;
   conns: Map<PlayerId, WebSocket>;
+  bots: Set<PlayerId>;
   timer: ReturnType<typeof setInterval> | null;
 }
 
@@ -57,7 +59,7 @@ export class GameServer {
       }
       this.handle(conn, msg);
     });
-    // MVP: 断线就留座位，缺席每拍按「防」处理（Match 默认防）。
+    ws.on('close', () => this.onClose(conn));
   }
 
   private handle(conn: Conn, msg: ClientMessage): void {
@@ -75,6 +77,14 @@ export class GameServer {
       const room = this.rooms.get(conn.room);
       if (!room) return;
       room.match.submit(conn.id, msg.beat, msg.action);
+    } else if (msg.type === 'addBot') {
+      if (conn.room === undefined) return;
+      const room = this.rooms.get(conn.room);
+      if (!room || room.match.currentPhase !== 'lobby') return;
+      const id = room.match.addPlayer('🤖 电脑');
+      room.bots.add(id);
+      this.sendRoomStateToAll(room);
+      if (room.match.playerCount >= 2) this.startRoom(conn.room, room);
     }
   }
 
@@ -91,6 +101,29 @@ export class GameServer {
       beat: room.match.currentBeat,
       deadlineMs: Date.now() + this.beatMs,
     });
+    this.submitBots(room);
+  }
+
+  /** 每拍开始时，让房里的 Bot 各自出招（只用公开信息）。 */
+  private submitBots(room: Room): void {
+    if (room.bots.size === 0) return;
+    const state = room.match.publicState();
+    const beat = room.match.currentBeat;
+    for (const id of room.bots) {
+      if (state.players[id]?.alive) room.match.submit(id, beat, botAction(state, id));
+    }
+  }
+
+  private onClose(conn: Conn): void {
+    if (conn.room === undefined || conn.id === undefined) return;
+    const room = this.rooms.get(conn.room);
+    if (!room) return;
+    room.conns.delete(conn.id);
+    if (room.conns.size === 0) {
+      // 没真人了（含只剩 Bot）→ 清理房间
+      if (room.timer) clearInterval(room.timer);
+      this.rooms.delete(conn.room);
+    }
   }
 
   private onBeat(room: Room): void {
@@ -111,7 +144,7 @@ export class GameServer {
   private getOrCreateRoom(code: string): Room {
     let room = this.rooms.get(code);
     if (!room) {
-      room = { match: new Match(), conns: new Map(), timer: null };
+      room = { match: new Match(), conns: new Map(), timer: null, bots: new Set() };
       this.rooms.set(code, room);
     }
     return room;

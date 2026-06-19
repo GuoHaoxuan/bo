@@ -3,14 +3,22 @@ import { useGame, type Status } from './useGame';
 import { Arena } from './Arena';
 
 export function App() {
-  const { view, join, submit } = useGame();
+  const { view, join, playVsAi, submit } = useGame();
   if (view.status === 'menu' || view.status === 'connecting' || view.status === 'error') {
-    return <Menu onJoin={join} status={view.status} />;
+    return <Menu onJoin={join} onPlayVsAi={playVsAi} status={view.status} />;
   }
   return <Arena view={view} submit={submit} />;
 }
 
-function Menu({ onJoin, status }: { onJoin: (room: string, name: string) => void; status: Status }) {
+function Menu({
+  onJoin,
+  onPlayVsAi,
+  status,
+}: {
+  onJoin: (room: string, name: string) => void;
+  onPlayVsAi: (name: string) => void;
+  status: Status;
+}) {
   const [name, setName] = useState('');
   const [room, setRoom] = useState('');
   const ready = name.trim().length > 0 && room.trim().length > 0;
@@ -50,6 +58,14 @@ function Menu({ onJoin, status }: { onJoin: (room: string, name: string) => void
             onClick={() => onJoin(room.trim(), name.trim())}
           >
             {status === 'connecting' ? '连接中…' : status === 'error' ? '重 试' : '进 房 间'}
+          </button>
+          <div className="or">— 或 —</div>
+          <button
+            className="bigbtn bigbtn--alt"
+            disabled={status === 'connecting'}
+            onClick={() => onPlayVsAi(name.trim())}
+          >
+            🤖 打 AI 练手
           </button>
           {status === 'error' && (
             <p className="hint" style={{ color: 'var(--red)' }}>

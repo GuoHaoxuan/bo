@@ -19,7 +19,8 @@ export interface PublicState {
 /** 客户端 → 服务器 */
 export type ClientMessage =
   | { type: 'joinRoom'; room: string; name: string }
-  | { type: 'submitAction'; beat: number; action: Action };
+  | { type: 'submitAction'; beat: number; action: Action }
+  | { type: 'addBot' }; // 请求给本房间加一个 AI 对手
 
 /** 服务器 → 客户端 */
 export type ServerMessage =

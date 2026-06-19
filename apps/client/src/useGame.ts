@@ -34,15 +34,22 @@ const INITIAL: GameView = {
   winner: null,
 };
 
-export function useGame(): { view: GameView; join: (room: string, name: string) => void; submit: (a: Action) => void } {
+export function useGame(): {
+  view: GameView;
+  join: (room: string, name: string) => void;
+  playVsAi: (name: string) => void;
+  submit: (a: Action) => void;
+} {
   const wsRef = useRef<WebSocket | null>(null);
   const [view, setView] = useState<GameView>(INITIAL);
 
-  const join = useCallback((room: string, name: string) => {
+  const connect = useCallback((messages: ClientMessage[]) => {
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
     setView((v) => ({ ...v, status: 'connecting' }));
-    ws.onopen = () => ws.send(JSON.stringify({ type: 'joinRoom', room, name } satisfies ClientMessage));
+    ws.onopen = () => {
+      for (const m of messages) ws.send(JSON.stringify(m));
+    };
     ws.onerror = () => setView((v) => ({ ...v, status: 'error' }));
     ws.onclose = () => setView((v) => (v.status === 'gameOver' ? v : { ...v, status: 'error' }));
     ws.onmessage = (ev) => {
@@ -51,6 +58,16 @@ export function useGame(): { view: GameView; join: (room: string, name: string) 
       setView((v) => reduce(v, msg));
     };
   }, []);
+
+  const join = useCallback((room: string, name: string) => connect([{ type: 'joinRoom', room, name }]), [connect]);
+
+  const playVsAi = useCallback(
+    (name: string) => {
+      const room = 'solo-' + Math.random().toString(36).slice(2, 8);
+      connect([{ type: 'joinRoom', room, name: name || '你' }, { type: 'addBot' }]);
+    },
+    [connect],
+  );
 
   const submit = useCallback((action: Action) => {
     const ws = wsRef.current;
@@ -62,7 +79,7 @@ export function useGame(): { view: GameView; join: (room: string, name: string) 
   }, []);
 
   useEffect(() => () => wsRef.current?.close(), []);
-  return { view, join, submit };
+  return { view, join, playVsAi, submit };
 }
 
 function reduce(v: GameView, msg: ServerMessage): GameView {

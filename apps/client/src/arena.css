@@ -185,3 +185,61 @@
   backdrop-filter: blur(1.5px);
   z-index: 30;
 }
+
+/* ---------- 手机竖屏：压缩中央舞台，确保底部按钮可见可点 ---------- */
+@media (max-width: 640px) {
+  .arena {
+    padding: 10px;
+    gap: 8px;
+  }
+  .main {
+    gap: 8px;
+  }
+  .ministrip {
+    gap: 4px;
+  }
+  .mrow {
+    min-height: 26px;
+  }
+  .mcell {
+    width: 26px;
+    height: 26px;
+    font-size: 0.72rem;
+  }
+  .stage {
+    gap: 8px;
+  }
+  .bigcard {
+    width: 96vw;
+    padding: 8px 14px;
+    gap: 10px;
+    border-radius: 14px;
+  }
+  .bigcard__id {
+    font-size: 0.78rem;
+  }
+  .qibadge {
+    font-size: 1rem;
+    margin-left: 5px;
+    padding: 1px 9px;
+  }
+  .bigcard__move {
+    font-size: clamp(30px, 13vw, 50px);
+    -webkit-text-stroke: 2px var(--ink);
+  }
+  .stage__outcome {
+    font-size: clamp(14px, 4.4vw, 20px);
+    padding: 4px 14px;
+  }
+  .actions {
+    gap: 6px;
+  }
+  .actions .chip {
+    min-width: 56px;
+    font-size: 1rem;
+    padding: 0.5rem 0.45rem;
+  }
+  .chip__cost {
+    font-size: 10px;
+  }
+}

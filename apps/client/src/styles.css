@@ -23,6 +23,14 @@ body,
 #root {
   height: 100%;
 }
+/* 手机浏览器地址栏会让 100% 比可视区高，底部按钮被挤出屏幕；用动态视口高度修正 */
+@supports (height: 100dvh) {
+  html,
+  body,
+  #root {
+    height: 100dvh;
+  }
+}
 
 body {
   font-family: 'ZCOOL KuaiLe', system-ui, sans-serif;

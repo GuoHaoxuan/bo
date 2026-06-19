@@ -6,6 +6,7 @@ services:
     runtime: node
     name: bo-server
     plan: free
+    region: singapore # 亚洲玩家就近，延迟最低；改区域需重建服务（见 README）
     buildCommand: pnpm install
     startCommand: pnpm --filter @bo/server start
 

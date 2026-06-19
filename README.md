@@ -63,6 +63,8 @@ TypeScript pnpm monorepo：
 - `VITE_WS_URL` = `wss://bo-server-xxxx.onrender.com`（把后端那个 `https://…` 网址的 `https` 换成 `wss`）
 
 > 静态站的后端地址必须在**构建期**写进打包文件，所以这一步要手动设一次。本地开发不受影响——没设环境变量时照常连 `ws://localhost:8080`。带不带 `wss://`、结尾带不带斜杠都行，客户端会自动归一化。
+>
+> **服务器区域**决定延迟：`render.yaml` 给 `bo-server` 设了 `region: singapore`（亚洲就近）。Render 的区域**建好后不可改**——要换区域得删掉该服务、重新 Apply 一次蓝图。
 
 需要手动建服务的话：
 

@@ -230,17 +230,6 @@ body::before {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.bigbtn--alt {
-  background: var(--cyan);
-  color: var(--ink);
-}
-.or {
-  text-align: center;
-  opacity: 0.55;
-  font-size: 0.95rem;
-  margin: -2px 0;
-}
-
 .hint {
   text-align: center;
   font-size: 0.95rem;

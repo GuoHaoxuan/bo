@@ -77,10 +77,11 @@ export class GameServer {
       if (!room) return;
       room.match.submit(conn.id, msg.beat, msg.action);
     } else if (msg.type === 'addBot') {
-      if (conn.room === undefined) return;
-      const room = this.rooms.get(conn.room);
-      if (!room || room.match.currentPhase !== 'lobby') return;
-      const id = room.match.addPlayer('🤖 电脑');
+      const room = conn.room !== undefined ? this.rooms.get(conn.room) : undefined;
+      if (!room || conn.id !== room.match.host) return; // 仅房主可加电脑
+      if (room.match.currentPhase !== 'lobby' || room.match.playerCount >= 6) return;
+      const n = room.bots.size;
+      const id = room.match.addPlayer(n === 0 ? '🤖 电脑' : `🤖 电脑 ${n + 1}`);
       room.bots.add(id);
       this.sendRoomStateToAll(room);
     } else if (msg.type === 'setConfig') {

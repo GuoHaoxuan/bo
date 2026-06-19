@@ -11,13 +11,12 @@ const BEAT_PRESETS = [
 ];
 
 export function Lobby({ game }: { game: GameApi }) {
-  const { view, setConfig, startGame } = game;
+  const { view, setConfig, startGame, addBot } = game;
   const state = view.state;
   if (!state) return null;
   const cfg = state.config;
   const isHost = view.you === state.host;
   const canStart = state.players.length >= 2;
-  const isSolo = view.room.startsWith('solo-');
 
   const update = (patch: Partial<RoomConfig>): void => setConfig({ ...cfg, ...patch });
 
@@ -37,6 +36,11 @@ export function Lobby({ game }: { game: GameApi }) {
               {i === view.you ? ' (你)' : ''}
             </span>
           ))}
+          {isHost && state.players.length < 6 && (
+            <button className="pchip pchip--add" onClick={addBot}>
+              ＋ 🤖 加入电脑
+            </button>
+          )}
         </div>
 
         <Setting label="每拍节奏">
@@ -72,14 +76,14 @@ export function Lobby({ game }: { game: GameApi }) {
 
         {isHost ? (
           <button className="bigbtn" disabled={!canStart} onClick={startGame}>
-            {canStart ? '开 始 对 战' : '等人进来…'}
+            {canStart ? '开 始 对 战' : '加个电脑或等朋友…'}
           </button>
         ) : (
           <p className="hint">等房主开始…</p>
         )}
-        {isHost && !isSolo && (
+        {isHost && (
           <p className="hint">
-            把房间暗号「{view.room}」发给朋友，他们进同一个房间就能一起玩。
+            想单练就点「加入电脑」；想跟朋友玩，把暗号「{view.room}」发给他们进同一个房间。
           </p>
         )}
       </div>

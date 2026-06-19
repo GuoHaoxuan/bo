@@ -30,6 +30,16 @@
 .pchip--you {
   background: var(--yellow);
 }
+.pchip--add {
+  cursor: pointer;
+  background: var(--cyan);
+  border-style: dashed;
+  font-family: 'ZCOOL KuaiLe', sans-serif;
+  font-size: 1rem;
+}
+.pchip--add:hover {
+  transform: translateY(-1px);
+}
 .setting {
   display: grid;
   gap: 6px;

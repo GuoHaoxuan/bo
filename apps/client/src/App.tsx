@@ -7,7 +7,7 @@ export function App() {
   const game = useGame();
   const { view } = game;
   if (view.status === 'menu' || view.status === 'connecting' || view.status === 'error') {
-    return <Menu onJoin={game.join} onPlayVsAi={game.playVsAi} status={view.status} />;
+    return <Menu onJoin={game.join} status={view.status} />;
   }
   if (view.status === 'lobby') {
     return <Lobby game={game} />;
@@ -17,16 +17,15 @@ export function App() {
 
 function Menu({
   onJoin,
-  onPlayVsAi,
   status,
 }: {
   onJoin: (room: string, name: string) => void;
-  onPlayVsAi: (name: string) => void;
   status: Status;
 }) {
   const [name, setName] = useState('');
   const [room, setRoom] = useState('');
-  const ready = name.trim().length > 0 && room.trim().length > 0;
+  const ready = name.trim().length > 0;
+  const enter = () => onJoin(room.trim() || Math.random().toString(36).slice(2, 6), name.trim());
   return (
     <div className="screen">
       <div className="speedlines" />
@@ -53,31 +52,19 @@ function Menu({
               className="field"
               value={room}
               maxLength={16}
-              placeholder="跟朋友约定一个口令"
+              placeholder="留空就自己开一桌"
               onChange={(e) => setRoom(e.target.value)}
             />
           </div>
-          <button
-            className="bigbtn"
-            disabled={!ready || status === 'connecting'}
-            onClick={() => onJoin(room.trim(), name.trim())}
-          >
+          <button className="bigbtn" disabled={!ready || status === 'connecting'} onClick={enter}>
             {status === 'connecting' ? '连接中…' : status === 'error' ? '重 试' : '进 房 间'}
-          </button>
-          <div className="or">— 或 —</div>
-          <button
-            className="bigbtn bigbtn--alt"
-            disabled={status === 'connecting'}
-            onClick={() => onPlayVsAi(name.trim())}
-          >
-            🤖 打 AI 练手
           </button>
           {status === 'error' && (
             <p className="hint" style={{ color: 'var(--red)' }}>
               连不上服务器，确认服务器在跑（端口 8080）。
             </p>
           )}
-          <p className="hint">两个人输入同一个暗号，就能对上开打。</p>
+          <p className="hint">进房间后可以「加入电脑」单练，或把暗号发给朋友一起玩。</p>
         </div>
       </div>
     </div>

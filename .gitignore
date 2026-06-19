@@ -3,6 +3,7 @@ dist/
 *.tsbuildinfo
 .DS_Store
 .playwright-mcp/
+/*.png
 
 # Rust reference branch artifacts (kept out of the TS tree)
 /target

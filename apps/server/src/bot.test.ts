@@ -8,8 +8,8 @@ function state(botQiWhole: number, oppQiWhole = botQiWhole): PublicState {
     phase: 'playing',
     beat: 0,
     players: [
-      { name: '你', alive: true, qi: oppQiWhole * 1000 }, // 0 = 对手
-      { name: '🤖', alive: true, qi: botQiWhole * 1000 }, // 1 = Bot
+      { name: '你', alive: true, qi: oppQiWhole * 1000, isBot: false }, // 0 = 对手
+      { name: '🤖', alive: true, qi: botQiWhole * 1000, isBot: true }, // 1 = Bot
     ],
     winner: null,
     config: { mode: 'bojue', beatMs: 1800, allowSpecials: false },

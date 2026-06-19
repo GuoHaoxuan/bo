@@ -13,7 +13,7 @@ interface Conn {
 
 interface Room {
   match: Match;
-  conns: Map<PlayerId, WebSocket>;
+  conns: Map<PlayerId, Conn>;
   bots: Set<PlayerId>;
   timer: ReturnType<typeof setInterval> | null;
 }
@@ -69,7 +69,7 @@ export class GameServer {
       const id = room.match.addPlayer(msg.name);
       conn.room = msg.room;
       conn.id = id;
-      room.conns.set(id, conn.ws);
+      room.conns.set(id, conn);
       this.sendRoomStateToAll(room);
     } else if (msg.type === 'submitAction') {
       if (conn.room === undefined || conn.id === undefined) return;
@@ -81,8 +81,14 @@ export class GameServer {
       if (!room || conn.id !== room.match.host) return; // 仅房主可加电脑
       if (room.match.currentPhase !== 'lobby' || room.match.playerCount >= 6) return;
       const n = room.bots.size;
-      const id = room.match.addPlayer(n === 0 ? '🤖 电脑' : `🤖 电脑 ${n + 1}`);
+      const id = room.match.addPlayer(n === 0 ? '🤖 电脑' : `🤖 电脑 ${n + 1}`, true);
       room.bots.add(id);
+      this.sendRoomStateToAll(room);
+    } else if (msg.type === 'removeBot') {
+      const room = conn.room !== undefined ? this.rooms.get(conn.room) : undefined;
+      if (!room || conn.id !== room.match.host) return; // 仅房主可移电脑
+      if (room.match.currentPhase !== 'lobby' || !room.bots.has(msg.id)) return; // 只能移电脑
+      this.removeSeat(room, msg.id);
       this.sendRoomStateToAll(room);
     } else if (msg.type === 'setConfig') {
       const room = conn.room !== undefined ? this.rooms.get(conn.room) : undefined;
@@ -101,6 +107,24 @@ export class GameServer {
     room.match.start();
     this.sendRoomStateToAll(room);
     this.beginBeat(room);
+  }
+
+  /** 大厅移走座位 k，并把其后所有 id 前移一位（座位=数组下标）：同步连接表、Bot 集合、各连接自己的 id。 */
+  private removeSeat(room: Room, k: PlayerId): void {
+    room.match.removePlayer(k);
+    const conns = new Map<PlayerId, Conn>();
+    for (const [id, c] of room.conns) {
+      const nid = id > k ? id - 1 : id;
+      c.id = nid;
+      conns.set(nid, c);
+    }
+    room.conns = conns;
+    const bots = new Set<PlayerId>();
+    for (const b of room.bots) {
+      if (b === k) continue;
+      bots.add(b > k ? b - 1 : b);
+    }
+    room.bots = bots;
   }
 
   /** 开一拍：广播 beatStart（+ Bot 出招），等 beatMs 后结算。 */
@@ -170,12 +194,12 @@ export class GameServer {
   }
 
   private broadcast(room: Room, msg: ServerMessage): void {
-    for (const ws of room.conns.values()) this.send(ws, msg);
+    for (const c of room.conns.values()) this.send(c.ws, msg);
   }
 
   private sendRoomStateToAll(room: Room): void {
-    for (const [id, ws] of room.conns) {
-      this.send(ws, { type: 'roomState', you: id, state: room.match.publicState() });
+    for (const [id, c] of room.conns) {
+      this.send(c.ws, { type: 'roomState', you: id, state: room.match.publicState() });
     }
   }
 }

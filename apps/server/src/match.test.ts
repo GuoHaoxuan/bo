@@ -84,6 +84,19 @@ describe('Match', () => {
     expect(m.publicState().players[0]!.alive).toBe(true);
   });
 
+  it('大厅可移走电脑：座位前移、isBot 标记正确', () => {
+    const m = new Match();
+    m.addPlayer('A'); // 0 真人
+    m.addPlayer('🤖 电脑', true); // 1 电脑
+    m.addPlayer('B'); // 2 真人
+    expect(m.publicState().players.map((p) => p.isBot)).toEqual([false, true, false]);
+    m.removePlayer(1);
+    const ps = m.publicState().players;
+    expect(ps.map((p) => p.name)).toEqual(['A', 'B']);
+    expect(ps.map((p) => p.isBot)).toEqual([false, false]);
+    expect(m.playerCount).toBe(2);
+  });
+
   it('开放超模特招后可用，推波克空打穿', () => {
     const m = new Match();
     m.setConfig({ mode: 'bojue', beatMs: 1800, allowSpecials: true });

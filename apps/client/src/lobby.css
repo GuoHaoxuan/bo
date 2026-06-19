@@ -40,6 +40,18 @@
 .pchip--add:hover {
   transform: translateY(-1px);
 }
+.pchip__x {
+  margin-left: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--red);
+  font-weight: 800;
+  font-size: 1.15em;
+  line-height: 1;
+  vertical-align: middle;
+}
 .setting {
   display: grid;
   gap: 6px;

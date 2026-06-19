@@ -11,6 +11,7 @@ import type { Phase, PublicPlayer, PublicState, RoomConfig } from '@bo/protocol'
 
 interface Seat {
   name: string;
+  isBot: boolean;
 }
 
 const DEFAULT_CONFIG: RoomConfig = { mode: 'bojue', beatMs: 1800, allowSpecials: false };
@@ -56,10 +57,17 @@ export class Match {
   }
 
   /** 大厅阶段加入，返回座位 id。 */
-  addPlayer(name: string): PlayerId {
+  addPlayer(name: string, isBot = false): PlayerId {
     if (this.phase !== 'lobby') throw new Error('cannot join: game already started');
-    this.seats.push({ name });
+    this.seats.push({ name, isBot });
     return this.seats.length - 1;
+  }
+
+  /** 大厅阶段移除一个座位（移走电脑）；非大厅 / 越界 → 忽略。座位是数组下标，移除后其后整体前移。 */
+  removePlayer(id: PlayerId): void {
+    if (this.phase !== 'lobby') return;
+    if (id < 0 || id >= this.seats.length) return;
+    this.seats.splice(id, 1);
   }
 
   start(): void {
@@ -105,6 +113,7 @@ export class Match {
       name: s.name,
       alive: this.state.players[i]?.alive ?? true,
       qi: this.state.players[i]?.qi.get('bo') ?? 0,
+      isBot: s.isBot,
     }));
     return { phase: this.phase, beat: this.state.beat, players, winner: this.winner, config: this.cfg, host: this.host };
   }

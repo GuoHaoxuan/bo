@@ -11,7 +11,7 @@ const BEAT_PRESETS = [
 ];
 
 export function Lobby({ game }: { game: GameApi }) {
-  const { view, setConfig, startGame, addBot } = game;
+  const { view, setConfig, startGame, addBot, removeBot } = game;
   const state = view.state;
   if (!state) return null;
   const cfg = state.config;
@@ -34,6 +34,11 @@ export function Lobby({ game }: { game: GameApi }) {
               {i === state.host ? '👑 ' : ''}
               {p.name}
               {i === view.you ? ' (你)' : ''}
+              {isHost && p.isBot && (
+                <button className="pchip__x" title="移走电脑" onClick={() => removeBot(i)}>
+                  ×
+                </button>
+              )}
             </span>
           ))}
           {isHost && state.players.length < 6 && (

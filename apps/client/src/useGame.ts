@@ -43,6 +43,7 @@ export interface GameApi {
   view: GameView;
   join: (room: string, name: string) => void;
   addBot: () => void;
+  removeBot: (id: number) => void;
   submit: (a: Action) => void;
   setConfig: (config: RoomConfig) => void;
   startGame: () => void;
@@ -74,6 +75,10 @@ export function useGame(): GameApi {
     wsRef.current?.send(JSON.stringify({ type: 'addBot' } satisfies ClientMessage));
   }, []);
 
+  const removeBot = useCallback((id: number) => {
+    wsRef.current?.send(JSON.stringify({ type: 'removeBot', id } satisfies ClientMessage));
+  }, []);
+
   const submit = useCallback((action: Action) => {
     const ws = wsRef.current;
     setView((v) => {
@@ -92,7 +97,7 @@ export function useGame(): GameApi {
   }, []);
 
   useEffect(() => () => wsRef.current?.close(), []);
-  return { view, join, addBot, submit, setConfig, startGame };
+  return { view, join, addBot, removeBot, submit, setConfig, startGame };
 }
 
 function reduce(v: GameView, msg: ServerMessage): GameView {

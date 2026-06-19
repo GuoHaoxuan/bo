@@ -16,6 +16,7 @@ export interface PublicPlayer {
   name: string;
   alive: boolean;
   qi: number; // 波决：bo 气（毫气）。后续多通道再扩成 Record<QiType, number>
+  isBot: boolean; // 电脑玩家（大厅里房主可移走）
 }
 
 export interface PublicState {
@@ -31,7 +32,8 @@ export interface PublicState {
 export type ClientMessage =
   | { type: 'joinRoom'; room: string; name: string }
   | { type: 'submitAction'; beat: number; action: Action }
-  | { type: 'addBot' } // 请求给本房间加一个 AI 对手
+  | { type: 'addBot' } // 房主给本房间加一个电脑对手
+  | { type: 'removeBot'; id: PlayerId } // 房主移走某个电脑
   | { type: 'setConfig'; config: RoomConfig } // 房主改设置
   | { type: 'startGame' }; // 房主开始对战
 

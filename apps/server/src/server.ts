@@ -1,4 +1,5 @@
 import { WebSocketServer, WebSocket } from 'ws';
+import { createServer, type Server as HttpServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { ClientMessage, ServerMessage } from '@bo/protocol';
 import type { PlayerId } from '@bo/rules';
@@ -23,6 +24,7 @@ const BEAT_MS_DEFAULT = 1800;
 /** WebSocket 传输层：管连接、房间、节拍定时器，把消息路由进 Match、把结果广播出去。 */
 export class GameServer {
   private wss: WebSocketServer | null = null;
+  private http: HttpServer | null = null;
   private readonly rooms = new Map<string, Room>();
   private readonly beatMs: number;
 
@@ -32,20 +34,26 @@ export class GameServer {
 
   listen(port: number): Promise<number> {
     return new Promise((resolve) => {
-      const wss = new WebSocketServer({ port }, () => {
-        const addr = wss.address() as AddressInfo;
-        resolve(addr.port);
+      // 普通 HTTP 请求回 200（托管平台的健康检查用）；WebSocket 升级交给 ws 处理。
+      const http = createServer((_req, res) => {
+        res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('bo server ok');
       });
+      const wss = new WebSocketServer({ server: http });
       wss.on('connection', (ws) => this.onConnection(ws));
       this.wss = wss;
+      this.http = http;
+      http.listen(port, () => resolve((http.address() as AddressInfo).port));
     });
   }
 
   close(): Promise<void> {
     for (const r of this.rooms.values()) if (r.timer) clearTimeout(r.timer);
     this.rooms.clear();
-    const wss = this.wss;
-    return new Promise((resolve) => (wss ? wss.close(() => resolve()) : resolve()));
+    this.wss?.close();
+    this.http?.closeAllConnections();
+    const http = this.http;
+    return new Promise((resolve) => (http ? http.close(() => resolve()) : resolve()));
   }
 
   private onConnection(ws: WebSocket): void {

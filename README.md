@@ -44,13 +44,28 @@ pnpm -r test
 TypeScript pnpm monorepo：
 
 | 包 | 职责 |
-|----|------|
+| --- | --- |
 | `packages/rules` | 纯函数规则引擎：确定性 `resolve(state, submissions)`，定点「毫气」无浮点，全测试覆盖 |
 | `packages/protocol` | 客户端 / 服务器共享的消息与公开状态类型 |
 | `apps/server` | `ws` WebSocket，权威节拍循环，服务端 AI |
 | `apps/client` | React + Vite，漫画风 UI |
 
 完整规则见 [`docs/bo-rules-reference.md`](docs/bo-rules-reference.md)（语言无关，含各模式 / 招式 / 引擎要求）。
+
+## 部署（全免费，放 Render）
+
+前端是静态站、后端是常驻 WebSocket 进程，[Render](https://render.com) 免费档两样都能放（前端纯 CDN 不休眠；免费后端闲置会休眠，首次连接冷启动几十秒属正常）。
+
+**一键（推荐）**：仓库根目录有 [`render.yaml`](render.yaml)。Render → **New → Blueprint** → 选本仓库 → **Apply**，自动建好两个服务，`VITE_WS_HOST` 会自动指向后端。打开 `bo-client` 的网址即可玩。
+
+**手动**（或自动注入没生效时）分别建：
+
+| 服务 | 类型 | 构建命令 | 其它 |
+| --- | --- | --- | --- |
+| 后端 | Web Service · Node · Free | `pnpm install` | 启动命令 `pnpm --filter @bo/server start` |
+| 前端 | Static Site | `pnpm install && pnpm --filter @bo/client build` | 发布目录 `apps/client/dist` |
+
+再给前端加一个环境变量连后端（二选一）：`VITE_WS_HOST` = `bo-server-xxxx.onrender.com`（仅主机名，自动拼 `wss://`），或 `VITE_WS_URL` = `wss://bo-server-xxxx.onrender.com`（完整地址，优先级最高）。本地开发不受影响，照常 `pnpm dev` 连 `ws://localhost:8080`。
 
 ## 许可证
 

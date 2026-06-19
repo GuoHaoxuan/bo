@@ -25,7 +25,12 @@ export interface GameView {
 }
 
 const MAX_HISTORY = 8;
-const WS_URL = `ws://${location.hostname}:8080`;
+// 线上：VITE_WS_URL（完整 wss:// 地址）优先；否则 VITE_WS_HOST（仅主机名）拼 wss://；
+// 本地开发都没设 → 连 ws://<当前主机>:8080。
+const env = import.meta.env;
+const WS_URL =
+  env.VITE_WS_URL ||
+  (env.VITE_WS_HOST ? `wss://${env.VITE_WS_HOST}` : `ws://${location.hostname}:8080`);
 const INITIAL: GameView = {
   status: 'menu',
   room: '',

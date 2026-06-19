@@ -1,0 +1,27 @@
+# Render Blueprint —— 一键部署「波」的前端(静态站) + 后端(常驻 WebSocket)。
+# 用法：Render(render.com) → New → Blueprint → 选 GuoHaoxuan/bo → Apply。
+services:
+  # 后端：常驻 WebSocket 进程（权威节拍循环 + 服务端 AI）
+  - type: web
+    runtime: node
+    name: bo-server
+    plan: free
+    buildCommand: pnpm install
+    startCommand: pnpm --filter @bo/server start
+
+  # 前端：Vite 打包出的静态站；VITE_WS_HOST 自动指向后端
+  - type: web
+    runtime: static
+    name: bo-client
+    buildCommand: pnpm install && pnpm --filter @bo/client build
+    staticPublishPath: apps/client/dist
+    envVars:
+      - key: VITE_WS_HOST
+        fromService:
+          type: web
+          name: bo-server
+          property: host
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

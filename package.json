@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "description": "「波」online — a beat-driven, simultaneous-reveal turn-based game",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "test": "pnpm -r test",

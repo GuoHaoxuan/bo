@@ -56,16 +56,20 @@ TypeScript pnpm monorepo：
 
 前端是静态站、后端是常驻 WebSocket 进程，[Render](https://render.com) 免费档两样都能放（前端纯 CDN 不休眠；免费后端闲置会休眠，首次连接冷启动几十秒属正常）。
 
-**一键（推荐）**：仓库根目录有 [`render.yaml`](render.yaml)。Render → **New → Blueprint** → 选本仓库 → **Apply**，自动建好两个服务，`VITE_WS_HOST` 会自动指向后端。打开 `bo-client` 的网址即可玩。
+**一键（推荐）**：仓库根目录有 [`render.yaml`](render.yaml)。Render → **New → Blueprint** → 选本仓库 → **Apply**，自动建好 `bo-server`(Web Service) 与 `bo-client`(Static Site) 两个服务。
 
-**手动**（或自动注入没生效时）分别建：
+**关键一步**：等 `bo-server` 部署出网址后，到 `bo-client` → **Environment** 设一个变量（设完 Render 会自动重建）：
+
+- `VITE_WS_URL` = `wss://bo-server-xxxx.onrender.com`（把后端那个 `https://…` 网址的 `https` 换成 `wss`）
+
+> 静态站的后端地址必须在**构建期**写进打包文件，所以这一步要手动设一次。本地开发不受影响——没设环境变量时照常连 `ws://localhost:8080`。带不带 `wss://`、结尾带不带斜杠都行，客户端会自动归一化。
+
+需要手动建服务的话：
 
 | 服务 | 类型 | 构建命令 | 其它 |
 | --- | --- | --- | --- |
 | 后端 | Web Service · Node · Free | `pnpm install` | 启动命令 `pnpm --filter @bo/server start` |
 | 前端 | Static Site | `pnpm install && pnpm --filter @bo/client build` | 发布目录 `apps/client/dist` |
-
-再给前端加一个环境变量连后端（二选一）：`VITE_WS_HOST` = `bo-server-xxxx.onrender.com`（仅主机名，自动拼 `wss://`），或 `VITE_WS_URL` = `wss://bo-server-xxxx.onrender.com`（完整地址，优先级最高）。本地开发不受影响，照常 `pnpm dev` 连 `ws://localhost:8080`。
 
 ## 许可证
 

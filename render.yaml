@@ -9,18 +9,18 @@ services:
     buildCommand: pnpm install
     startCommand: pnpm --filter @bo/server start
 
-  # 前端：Vite 打包出的静态站；VITE_WS_HOST 自动指向后端
+  # 前端：Vite 打包出的静态站
   - type: web
     runtime: static
     name: bo-client
     buildCommand: pnpm install && pnpm --filter @bo/client build
     staticPublishPath: apps/client/dist
     envVars:
-      - key: VITE_WS_HOST
-        fromService:
-          type: web
-          name: bo-server
-          property: host
+      # 部署后在 bo-client → Environment 里把它设成后端地址（设完会自动重建）：
+      #   VITE_WS_URL = wss://bo-server-xxxx.onrender.com
+      # 静态站的地址必须在构建期写入，所以这一步手动设一次。
+      - key: VITE_WS_URL
+        sync: false
     routes:
       - type: rewrite
         source: /*

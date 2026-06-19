@@ -115,6 +115,29 @@
   font-size: 1.1rem;
   flex-shrink: 0;
 }
+.qibadge {
+  display: inline-block;
+  margin-left: 8px;
+  font-family: 'Bangers', 'ZCOOL KuaiLe', cursive;
+  font-size: 1.3rem;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 999px;
+  padding: 2px 12px;
+  vertical-align: middle;
+}
+.qibadge__u {
+  font-size: 0.62em;
+  opacity: 0.7;
+  margin-left: 2px;
+}
+.qibadge--dead {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
 .bigcard__move {
   font-family: 'Bangers', 'ZCOOL KuaiLe', cursive;
   font-size: clamp(40px, 11vw, 74px);

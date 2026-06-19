@@ -87,7 +87,15 @@ export function Arena({ view, submit }: { view: GameView; submit: (a: Action) =>
               <div key={pid} className={`bigcard${pid === view.you ? ' bigcard--you' : ''}${p && p.alive ? '' : ' bigcard--dead'}`}>
                 <div className="bigcard__id">
                   {p?.name}
-                  {pid === view.you ? ' (你)' : ''} · {p && p.alive ? renderQi(p.qi) : '💀'}
+                  {pid === view.you ? ' (你)' : ''}
+                  {p && p.alive ? (
+                    <span className="qibadge">
+                      {fmtQi(p.qi)}
+                      <span className="qibadge__u">气</span>
+                    </span>
+                  ) : (
+                    <span className="qibadge qibadge--dead">💀</span>
+                  )}
                 </div>
                 <div
                   key={latest?.beat ?? -1}
@@ -148,9 +156,8 @@ function outcomeText(reveal: Reveal, players: ReadonlyArray<{ name: string }>): 
   return out.length ? out.join('，') : '都安全，继续！';
 }
 
-function renderQi(milli: number): string {
-  const whole = Math.round(milli / 1000);
-  if (whole <= 0) return '·';
-  if (whole > 8) return '⚡'.repeat(8) + '+';
-  return '⚡'.repeat(whole);
+/** 毫气 → 气 数字串：整数不带小数，否则一位小数（0.1/0.5）。100 代也只是更大的数。 */
+function fmtQi(milli: number): string {
+  const qi = milli / 1000;
+  return Number.isInteger(qi) ? String(qi) : qi.toFixed(1);
 }

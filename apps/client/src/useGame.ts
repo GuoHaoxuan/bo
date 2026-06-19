@@ -114,12 +114,14 @@ function reduce(v: GameView, msg: ServerMessage): GameView {
     return { ...v, you: msg.you, state: msg.state, status };
   }
   if (msg.type === 'beatStart') {
+    // 用本地时钟 + 配置的每拍时长来跑倒计时，避免与服务器时钟有偏差导致进度条跳动/卡顿。
+    const dur = v.state?.config.beatMs ?? Math.max(1, msg.deadlineMs - Date.now());
     return {
       ...v,
       status: 'playing',
       beat: msg.beat,
-      deadlineMs: msg.deadlineMs,
-      beatDurationMs: Math.max(1, msg.deadlineMs - Date.now()),
+      deadlineMs: Date.now() + dur,
+      beatDurationMs: dur,
       submittedThisBeat: false,
     };
   }

@@ -1,32 +1,31 @@
 import { useEffect, useState } from 'react';
 import type { Action } from '@bo/rules';
 import type { GameView } from './useGame';
-import { MOVES, actionLabel, actionDesc } from './skills';
+import { MOVES, actionLabel, actionAccent } from './skills';
+
+const BEAT_FALLBACK = 3000;
 
 export function Arena({ view, submit }: { view: GameView; submit: (a: Action) => void }) {
   const players = view.state?.players ?? [];
   const yourQi = players[view.you]?.qi ?? 0;
-  const reveal = view.reveal;
   const isOver = view.status === 'gameOver';
-  const revealing = reveal !== null && view.status === 'playing';
 
-  // 节拍倒计时条（只在输入窗口走；翻牌时清零）
-  const total = view.beatDurationMs || 3000;
+  // 节拍倒计时条
+  const total = view.beatDurationMs || BEAT_FALLBACK;
   const [ratio, setRatio] = useState(1);
   useEffect(() => {
-    if (view.status !== 'playing' || revealing) {
-      setRatio(revealing ? 0 : 1);
+    if (view.status !== 'playing') {
+      setRatio(1);
       return undefined;
     }
     let raf = 0;
     const tick = () => {
-      const left = view.deadlineMs - Date.now();
-      setRatio(Math.max(0, Math.min(1, left / total)));
+      setRatio(Math.max(0, Math.min(1, (view.deadlineMs - Date.now()) / total)));
       raf = requestAnimationFrame(tick);
     };
     tick();
     return () => cancelAnimationFrame(raf);
-  }, [view.status, view.deadlineMs, revealing, total]);
+  }, [view.status, view.deadlineMs, total]);
 
   if (view.status === 'lobby') {
     return (
@@ -49,6 +48,11 @@ export function Arena({ view, submit }: { view: GameView; submit: (a: Action) =>
         ? { t: '你 赢 了!', c: 'var(--red)' }
         : { t: '你 输 了', c: 'var(--ink)' };
 
+  // 行序：对手在上、你在下
+  const order: number[] = [];
+  for (let i = 0; i < players.length; i++) if (i !== view.you) order.push(i);
+  if (view.you >= 0 && view.you < players.length) order.push(view.you);
+
   return (
     <div className="arena">
       <div className="speedlines" />
@@ -63,19 +67,31 @@ export function Arena({ view, submit }: { view: GameView; submit: (a: Action) =>
         </div>
       </div>
 
-      <div className="fighters">
-        {players.map((p, i) => (
-          <div
-            key={i}
-            className={`fighter${i === view.you ? ' fighter--you' : ''}${p.alive ? '' : ' fighter--dead'}`}
-          >
-            <div className="fighter__name">
-              {p.name}
-              {i === view.you ? ' (你)' : ''}
+      <div className="duel">
+        {order.map((pid) => {
+          const p = players[pid];
+          return (
+            <div key={pid} className={`prow${pid === view.you ? ' prow--you' : ''}${p && p.alive ? '' : ' prow--dead'}`}>
+              <div className="prow__id">
+                <div className="prow__name">
+                  {p?.name}
+                  {pid === view.you ? ' (你)' : ''}
+                </div>
+                <div className="prow__qi">{p && p.alive ? renderQi(p.qi) : '💀'}</div>
+              </div>
+              <div className="prow__hist">
+                {view.history.map((rev) => {
+                  const a = rev.actions.find((x) => x.id === pid)?.action;
+                  return (
+                    <div key={rev.beat} className={`hcell ${a ? 'hcell--' + actionAccent(a) : 'hcell--empty'}`}>
+                      {a ? actionLabel(a) : ''}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="fighter__qi">{p.alive ? renderQi(p.qi) : '💀'}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {!isOver && (
@@ -83,7 +99,7 @@ export function Arena({ view, submit }: { view: GameView; submit: (a: Action) =>
           <div className="actions">
             {MOVES.map((m) => {
               const afford = m.kind !== 'attack' || yourQi >= m.costWhole * 1000;
-              const disabled = view.submittedThisBeat || revealing || !afford;
+              const disabled = view.submittedThisBeat || !afford;
               return (
                 <button key={m.key} className={`chip chip--${m.accent}`} disabled={disabled} onClick={() => submit(m.action)}>
                   {m.label}
@@ -92,30 +108,7 @@ export function Arena({ view, submit }: { view: GameView; submit: (a: Action) =>
               );
             })}
           </div>
-          <p className="hint">
-            {revealing ? '翻牌中…' : view.submittedThisBeat ? '已出招，等翻牌…' : '趁节拍拍下你的招！'}
-          </p>
-        </div>
-      )}
-
-      {revealing && reveal && (
-        <div className="slam">
-          <div className="slam__head pow">翻 牌!</div>
-          <div className="slam__panels">
-            {reveal.actions.map(({ id, action }) => (
-              <div key={id} className="slam__cell pop-in">
-                <div className="slam__who">{players[id]?.name ?? `P${id}`}</div>
-                <div
-                  className="slam__move"
-                  style={{ color: action.kind === 'attack' ? 'var(--red)' : 'var(--cyan)' }}
-                >
-                  {actionLabel(action)}
-                </div>
-                <div className="slam__desc">{actionDesc(action)}</div>
-              </div>
-            ))}
-          </div>
-          <div className="slam__outcome pop-in">{outcomeText(reveal, players)}</div>
+          <p className="hint">{view.submittedThisBeat ? '已出招，等这一拍结算…' : '跟着节拍拍下你的招！'}</p>
         </div>
       )}
 
@@ -131,15 +124,6 @@ export function Arena({ view, submit }: { view: GameView; submit: (a: Action) =>
       )}
     </div>
   );
-}
-
-function outcomeText(reveal: NonNullable<GameView['reveal']>, players: ReadonlyArray<{ name: string }>): string {
-  const name = (id: number): string => players[id]?.name ?? `P${id}`;
-  const out: string[] = [];
-  for (const id of reveal.resolution.rong) out.push(`${name(id)} 溶了（出招失败）`);
-  for (const id of reveal.resolution.combatDeaths) out.push(`${name(id)} 被打死!`);
-  for (const id of reveal.resolution.dui) out.push(`${name(id)} 被兑（清空气）`);
-  return out.length ? out.join('，') : '都安全，继续！';
 }
 
 function renderQi(milli: number): string {

@@ -10,7 +10,7 @@ export interface UiMove {
 }
 
 export const MOVES: UiMove[] = [
-  { key: 'yunqi', label: '运气', costWhole: 0, kind: 'charge', action: { kind: 'charge' }, accent: 'cyan' },
+  { key: 'yunqi', label: '波', costWhole: 0, kind: 'charge', action: { kind: 'charge' }, accent: 'cyan' },
   { key: 'fang', label: '防', costWhole: 0, kind: 'defend', action: { kind: 'defend' }, accent: 'cyan' },
   { key: 'kong', label: '空', costWhole: 1, kind: 'attack', action: { kind: 'attack', skill: 'kong', target: null }, accent: 'red' },
   { key: 'xiaosao', label: '小扫', costWhole: 2, kind: 'attack', action: { kind: 'attack', skill: 'xiaosao', target: null }, accent: 'red' },
@@ -20,14 +20,12 @@ export const MOVES: UiMove[] = [
 ];
 
 export function actionLabel(a: Action): string {
-  if (a.kind === 'charge') return '运气';
+  if (a.kind === 'charge') return '波';
   if (a.kind === 'defend') return '防';
   return MOVES.find((m) => m.action.kind === 'attack' && m.action.skill === a.skill)?.label ?? a.skill;
 }
 
-export function actionDesc(a: Action): string {
-  if (a.kind === 'charge') return '蓄力 +1气';
-  if (a.kind === 'defend') return '防御';
-  const m = MOVES.find((x) => x.action.kind === 'attack' && x.action.skill === a.skill);
-  return m ? `攻击 ${m.costWhole}气` : '攻击';
+export function actionAccent(a: Action): 'red' | 'cyan' | 'yellow' {
+  if (a.kind === 'charge' || a.kind === 'defend') return 'cyan';
+  return MOVES.find((m) => m.action.kind === 'attack' && m.action.skill === a.skill)?.accent ?? 'red';
 }

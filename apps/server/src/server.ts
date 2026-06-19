@@ -19,18 +19,15 @@ interface Room {
 }
 
 const BEAT_MS_DEFAULT = 3000;
-const REVEAL_MS_DEFAULT = 1800;
 
 /** WebSocket 传输层：管连接、房间、节拍定时器，把消息路由进 Match、把结果广播出去。 */
 export class GameServer {
   private wss: WebSocketServer | null = null;
   private readonly rooms = new Map<string, Room>();
   private readonly beatMs: number;
-  private readonly revealMs: number;
 
-  constructor(opts: { beatMs?: number; revealMs?: number } = {}) {
+  constructor(opts: { beatMs?: number } = {}) {
     this.beatMs = opts.beatMs ?? BEAT_MS_DEFAULT;
-    this.revealMs = opts.revealMs ?? REVEAL_MS_DEFAULT;
   }
 
   listen(port: number): Promise<number> {
@@ -111,12 +108,10 @@ export class GameServer {
     const state = room.match.publicState();
     this.broadcast(room, { type: 'resolution', beat, resolution, actions: [...room.match.lastActions], state });
     if (room.match.currentPhase === 'gameOver') {
-      room.timer = setTimeout(() => {
-        this.broadcast(room, { type: 'gameOver', winner: state.winner, state });
-        room.timer = null;
-      }, this.revealMs);
+      this.broadcast(room, { type: 'gameOver', winner: state.winner, state });
+      room.timer = null;
     } else {
-      room.timer = setTimeout(() => this.beginBeat(room), this.revealMs);
+      this.beginBeat(room); // 立即开下一拍，连续不卡
     }
   }
 

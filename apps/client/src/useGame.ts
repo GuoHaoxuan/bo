@@ -19,9 +19,11 @@ export interface GameView {
   deadlineMs: number;
   beatDurationMs: number;
   submittedThisBeat: boolean;
-  reveal: Reveal | null;
+  history: Reveal[];
   winner: number | null;
 }
+
+const MAX_HISTORY = 8;
 
 const WS_URL = `ws://${location.hostname}:8080`;
 const INITIAL: GameView = {
@@ -32,7 +34,7 @@ const INITIAL: GameView = {
   deadlineMs: 0,
   beatDurationMs: 0,
   submittedThisBeat: false,
-  reveal: null,
+  history: [],
   winner: null,
 };
 
@@ -97,11 +99,11 @@ function reduce(v: GameView, msg: ServerMessage): GameView {
       deadlineMs: msg.deadlineMs,
       beatDurationMs: Math.max(1, msg.deadlineMs - Date.now()),
       submittedThisBeat: false,
-      reveal: null, // 新一拍开始，撤掉上一拍的翻牌
     };
   }
   if (msg.type === 'resolution') {
-    return { ...v, state: msg.state, reveal: { beat: msg.beat, actions: msg.actions, resolution: msg.resolution } };
+    const entry: Reveal = { beat: msg.beat, actions: msg.actions, resolution: msg.resolution };
+    return { ...v, state: msg.state, history: [...v.history, entry].slice(-MAX_HISTORY) };
   }
   if (msg.type === 'gameOver') {
     return { ...v, status: 'gameOver', state: msg.state, winner: msg.winner };

@@ -52,7 +52,7 @@ function connect(port: number): Promise<Client> {
 
 describe('GameServer (integration)', () => {
   it('two clients play over the wire to game over', async () => {
-    const server = new GameServer({ beatMs: 100, revealMs: 20 });
+    const server = new GameServer({ beatMs: 100 });
     const port = await server.listen(0);
     const a = await connect(port);
     const b = await connect(port);

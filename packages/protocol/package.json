@@ -1,0 +1,17 @@
+{
+  "name": "@bo/protocol",
+  "version": "0.0.0",
+  "description": "Shared client↔server message types for 波 online",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bo/rules": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "latest"
+  }
+}

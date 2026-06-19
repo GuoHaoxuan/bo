@@ -1,0 +1,24 @@
+{
+  "name": "@bo/server",
+  "version": "0.0.0",
+  "description": "波 online — authoritative beat-driven WebSocket server",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@bo/protocol": "workspace:*",
+    "@bo/rules": "workspace:*",
+    "ws": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/ws": "latest",
+    "tsx": "latest",
+    "typescript": "latest",
+    "vitest": "latest"
+  }
+}

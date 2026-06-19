@@ -1,0 +1,136 @@
+.arena {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 14px;
+  padding: 16px;
+  position: relative;
+}
+
+.beatbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.meter {
+  flex: 1;
+  height: 22px;
+  border: var(--line) solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper-2);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.meter__fill {
+  height: 100%;
+  transition: width 0.08s linear;
+}
+
+.fighters {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  align-content: center;
+}
+.fighter {
+  min-width: 150px;
+  text-align: center;
+  padding: 16px 18px;
+  background: var(--paper);
+  border: var(--line) solid var(--ink);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  transition: transform 0.12s;
+}
+.fighter--you {
+  background: var(--yellow);
+  transform: scale(1.06) rotate(-1deg);
+}
+.fighter--dead {
+  opacity: 0.42;
+  transform: rotate(-4deg);
+}
+.fighter__name {
+  font-size: 1.3rem;
+}
+.fighter__qi {
+  font-size: 1.5rem;
+  margin-top: 8px;
+  letter-spacing: 1px;
+  min-height: 1.6em;
+}
+
+.actionwrap {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.actions .chip {
+  min-width: 78px;
+  text-align: center;
+  line-height: 1.05;
+}
+.chip__cost {
+  display: block;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(243, 231, 207, 0.55);
+  backdrop-filter: blur(1.5px);
+  z-index: 30;
+}
+
+.slam {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(243, 231, 207, 0.5);
+  z-index: 25;
+}
+.slam__panels {
+  display: flex;
+  gap: 10px;
+}
+.slam__cell {
+  background: var(--paper);
+  border: var(--line) solid var(--ink);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 18px 24px;
+  text-align: center;
+  transform: rotate(-2.5deg);
+}
+.slam__cell:nth-child(even) {
+  transform: rotate(2.5deg);
+}
+.slam__who {
+  font-size: 0.95rem;
+  opacity: 0.65;
+}
+.slam__pow {
+  font-size: clamp(36px, 9vw, 56px);
+}
+.slam__lbl {
+  font-size: 1.2rem;
+  margin-top: 2px;
+}
+.slam__ko {
+  position: absolute;
+  font-size: clamp(80px, 24vw, 150px);
+  color: var(--red);
+  transform: rotate(-12deg);
+  pointer-events: none;
+}

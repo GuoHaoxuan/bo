@@ -1,0 +1,252 @@
+/* ============== 波 · 漫画对决 — design system ============== */
+:root {
+  --ink: #16130f;
+  --paper: #f3e7cf;
+  --paper-2: #e9d9b8;
+  --red: #ff3b2e; /* 能量/攻击 */
+  --cyan: #18c3d6; /* 防御/运气 */
+  --yellow: #ffcf2e; /* 冲击/高亮 */
+  --pink: #ff7ab8;
+  --line: 4px;
+  --shadow: 7px 7px 0 var(--ink);
+  --shadow-sm: 4px 4px 0 var(--ink);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: 'ZCOOL KuaiLe', system-ui, sans-serif;
+  color: var(--ink);
+  background-color: var(--paper);
+  /* 半调网点 + 斜向纸纹 */
+  background-image:
+    radial-gradient(var(--ink) 1.1px, transparent 1.2px),
+    radial-gradient(var(--ink) 1.1px, transparent 1.2px);
+  background-size: 18px 18px;
+  background-position:
+    0 0,
+    9px 9px;
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+body::before {
+  /* 纸底色叠在网点之上，让点变淡 */
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: var(--paper);
+  opacity: 0.86;
+  z-index: -1;
+}
+
+/* ---------- 速度线放射背景 ---------- */
+.speedlines {
+  position: fixed;
+  inset: -20%;
+  z-index: -1;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(22, 19, 15, 0.06) 0deg 2deg,
+    transparent 2deg 6deg
+  );
+  animation: spin 50s linear infinite;
+  pointer-events: none;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- 通用分镜面板 ---------- */
+.panel {
+  background: var(--paper);
+  border: var(--line) solid var(--ink);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+/* ---------- 漫画大字 / 拟声 ---------- */
+.pow {
+  font-family: 'Bangers', 'ZCOOL KuaiLe', cursive;
+  letter-spacing: 2px;
+  -webkit-text-stroke: 3px var(--ink);
+  paint-order: stroke fill;
+  text-shadow: var(--shadow-sm);
+  line-height: 0.9;
+}
+
+/* ---------- 按钮 / 招式 chip ---------- */
+.chip {
+  font-family: 'ZCOOL KuaiLe', sans-serif;
+  font-size: 1.15rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: var(--line) solid var(--ink);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  padding: 0.55rem 0.7rem;
+  cursor: pointer;
+  transition:
+    transform 0.06s,
+    box-shadow 0.06s,
+    background 0.12s;
+  user-select: none;
+}
+.chip:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+.chip:active:not(:disabled) {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+}
+.chip--red {
+  background: var(--red);
+  color: var(--paper);
+}
+.chip--cyan {
+  background: var(--cyan);
+}
+.chip--yellow {
+  background: var(--yellow);
+}
+.chip--selected {
+  outline: var(--line) dashed var(--ink);
+  outline-offset: 3px;
+}
+
+/* ---------- 输入 ---------- */
+.field {
+  font-family: 'ZCOOL KuaiLe', sans-serif;
+  font-size: 1.1rem;
+  background: var(--paper);
+  border: var(--line) solid var(--ink);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  color: var(--ink);
+  box-shadow: inset 2px 2px 0 rgba(22, 19, 15, 0.12);
+  width: 100%;
+}
+.field::placeholder {
+  color: rgba(22, 19, 15, 0.45);
+}
+.field:focus {
+  outline: none;
+  border-color: var(--red);
+}
+
+/* ---------- 布局 ---------- */
+.screen {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+/* ====== 标题 ====== */
+.logo {
+  text-align: center;
+  margin-bottom: 6px;
+}
+.logo__bo {
+  font-family: 'Bangers', 'ZCOOL KuaiLe', cursive;
+  font-size: clamp(96px, 22vw, 200px);
+  color: var(--red);
+  -webkit-text-stroke: 7px var(--ink);
+  paint-order: stroke fill;
+  text-shadow: var(--shadow);
+  display: inline-block;
+  transform: rotate(-5deg);
+  line-height: 0.8;
+}
+.logo__sub {
+  display: inline-block;
+  transform: rotate(-2deg) translateY(-8px);
+  background: var(--yellow);
+  border: var(--line) solid var(--ink);
+  border-radius: 999px;
+  padding: 4px 18px;
+  font-size: 1.3rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.menu {
+  width: min(440px, 92vw);
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+}
+.menu__row {
+  display: grid;
+  gap: 6px;
+}
+.menu__label {
+  font-size: 1rem;
+}
+
+.bigbtn {
+  font-family: 'Bangers', 'ZCOOL KuaiLe', cursive;
+  font-size: 1.8rem;
+  letter-spacing: 1px;
+  background: var(--red);
+  color: var(--paper);
+  border: var(--line) solid var(--ink);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 12px;
+  cursor: pointer;
+  -webkit-text-stroke: 1.5px var(--ink);
+  paint-order: stroke fill;
+  transition:
+    transform 0.07s,
+    box-shadow 0.07s;
+}
+.bigbtn:hover:not(:disabled) {
+  transform: translate(-2px, -2px);
+  box-shadow: 9px 9px 0 var(--ink);
+}
+.bigbtn:active:not(:disabled) {
+  transform: translate(5px, 5px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.bigbtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hint {
+  text-align: center;
+  font-size: 0.95rem;
+  opacity: 0.7;
+}
+
+.pop-in {
+  animation: pop 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.6) rotate(-8deg);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}

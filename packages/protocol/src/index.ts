@@ -25,5 +25,11 @@ export type ClientMessage =
 export type ServerMessage =
   | { type: 'roomState'; you: PlayerId; state: PublicState }
   | { type: 'beatStart'; beat: number; deadlineMs: number }
-  | { type: 'resolution'; beat: number; resolution: Resolution; state: PublicState }
+  | {
+      type: 'resolution';
+      beat: number;
+      resolution: Resolution;
+      actions: Array<{ id: PlayerId; action: Action }>; // 本拍各玩家的明牌动作（揭示用）
+      state: PublicState;
+    }
   | { type: 'gameOver'; winner: PlayerId | null; state: PublicState };

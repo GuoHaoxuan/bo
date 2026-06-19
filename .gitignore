@@ -2,6 +2,7 @@ node_modules/
 dist/
 *.tsbuildinfo
 .DS_Store
+.playwright-mcp/
 
 # Rust reference branch artifacts (kept out of the TS tree)
 /target

@@ -98,7 +98,7 @@ export class GameServer {
     const resolution = room.match.tick();
     if (!resolution) return;
     const state = room.match.publicState();
-    this.broadcast(room, { type: 'resolution', beat, resolution, state });
+    this.broadcast(room, { type: 'resolution', beat, resolution, actions: [...room.match.lastActions], state });
     if (room.match.currentPhase === 'gameOver') {
       this.broadcast(room, { type: 'gameOver', winner: state.winner, state });
       if (room.timer) clearInterval(room.timer);

@@ -22,6 +22,12 @@ export class Match {
   private phase: Phase = 'lobby';
   private pending = new Map<PlayerId, Action>();
   private winner: PlayerId | null = null;
+  private lastActionsArr: Array<{ id: PlayerId; action: Action }> = [];
+
+  /** 上一拍各玩家的明牌动作（含缺席默认「防」），供揭示广播。 */
+  get lastActions(): ReadonlyArray<{ id: PlayerId; action: Action }> {
+    return this.lastActionsArr;
+  }
 
   get currentBeat(): number {
     return this.state.beat;
@@ -61,6 +67,9 @@ export class Match {
     if (this.phase !== 'playing') return null;
     const subs = this.pending;
     this.pending = new Map();
+    this.lastActionsArr = this.state.players.flatMap((p, id) =>
+      p.alive ? [{ id, action: subs.get(id) ?? { kind: 'defend' } }] : [],
+    );
     const { resolution, next } = resolve(this.state, subs);
     this.state = next;
     if (resolution.outcome.kind === 'winner') {

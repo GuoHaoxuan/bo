@@ -71,4 +71,17 @@ describe('Match', () => {
     expect(m.currentPhase).toBe('gameOver');
     expect(m.tick()).toBeNull(); // gameOver
   });
+
+  it('banned skill is rejected (禁招 → 忽略 → 默认防)', () => {
+    const m = new Match();
+    m.setConfig({ mode: 'bojue', beatMs: 1800, bannedSkills: ['kong'] });
+    m.addPlayer('A');
+    m.addPlayer('B');
+    m.start();
+    m.submit(0, 0, atk('kong')); // 被禁 → 忽略
+    m.submit(1, 0, charge);
+    const r = m.tick();
+    expect(r?.rong).toEqual([]); // 没真的出招，不会溶
+    expect(m.publicState().players[0]!.alive).toBe(true);
+  });
 });

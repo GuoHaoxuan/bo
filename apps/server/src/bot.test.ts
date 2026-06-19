@@ -12,6 +12,8 @@ function state(qiWhole: number): PublicState {
       { name: '🤖', alive: true, qi: qiWhole * 1000 },
     ],
     winner: null,
+    config: { mode: 'bojue', beatMs: 1800, bannedSkills: [] },
+    host: 0,
   };
 }
 

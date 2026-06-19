@@ -6,11 +6,13 @@ import {
   type PlayerId,
   type Resolution,
 } from '@bo/rules';
-import type { Phase, PublicPlayer, PublicState } from '@bo/protocol';
+import type { Phase, PublicPlayer, PublicState, RoomConfig } from '@bo/protocol';
 
 interface Seat {
   name: string;
 }
+
+const DEFAULT_CONFIG: RoomConfig = { mode: 'bojue', beatMs: 1800, bannedSkills: [] };
 
 /**
  * 一局对战的**纯逻辑核心**（无网络、无定时器）：管座位、阶段、当拍暗选，
@@ -23,10 +25,23 @@ export class Match {
   private pending = new Map<PlayerId, Action>();
   private winner: PlayerId | null = null;
   private lastActionsArr: Array<{ id: PlayerId; action: Action }> = [];
+  private cfg: RoomConfig = { ...DEFAULT_CONFIG };
 
   /** 上一拍各玩家的明牌动作（含缺席默认「防」），供揭示广播。 */
   get lastActions(): ReadonlyArray<{ id: PlayerId; action: Action }> {
     return this.lastActionsArr;
+  }
+
+  get config(): RoomConfig {
+    return this.cfg;
+  }
+  /** 房主 = 第一个座位。 */
+  get host(): PlayerId {
+    return 0;
+  }
+  /** 仅大厅阶段可改设置。 */
+  setConfig(c: RoomConfig): void {
+    if (this.phase === 'lobby') this.cfg = c;
   }
 
   get currentBeat(): number {
@@ -59,6 +74,7 @@ export class Match {
     if (beat !== this.state.beat) return;
     if (id < 0 || id >= this.seats.length) return;
     if (!this.state.players[id]!.alive) return;
+    if (action.kind === 'attack' && this.cfg.bannedSkills.includes(action.skill)) return; // 禁招
     this.pending.set(id, action);
   }
 
@@ -88,6 +104,6 @@ export class Match {
       alive: this.state.players[i]?.alive ?? true,
       qi: this.state.players[i]?.qi.get('bo') ?? 0,
     }));
-    return { phase: this.phase, beat: this.state.beat, players, winner: this.winner };
+    return { phase: this.phase, beat: this.state.beat, players, winner: this.winner, config: this.cfg, host: this.host };
   }
 }

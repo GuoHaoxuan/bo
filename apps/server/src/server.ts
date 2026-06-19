@@ -18,7 +18,7 @@ interface Room {
   timer: ReturnType<typeof setInterval> | null;
 }
 
-const BEAT_MS_DEFAULT = 3000;
+const BEAT_MS_DEFAULT = 1800;
 
 /** WebSocket 传输层：管连接、房间、节拍定时器，把消息路由进 Match、把结果广播出去。 */
 export class GameServer {
@@ -65,13 +65,12 @@ export class GameServer {
   private handle(conn: Conn, msg: ClientMessage): void {
     if (msg.type === 'joinRoom') {
       const room = this.getOrCreateRoom(msg.room);
-      if (room.match.currentPhase !== 'lobby') return; // 已开局，MVP 忽略后来者
+      if (room.match.currentPhase !== 'lobby') return; // 已开局，忽略后来者
       const id = room.match.addPlayer(msg.name);
       conn.room = msg.room;
       conn.id = id;
       room.conns.set(id, conn.ws);
       this.sendRoomStateToAll(room);
-      if (room.match.playerCount >= 2) this.startRoom(msg.room, room);
     } else if (msg.type === 'submitAction') {
       if (conn.room === undefined || conn.id === undefined) return;
       const room = this.rooms.get(conn.room);
@@ -84,7 +83,16 @@ export class GameServer {
       const id = room.match.addPlayer('🤖 电脑');
       room.bots.add(id);
       this.sendRoomStateToAll(room);
-      if (room.match.playerCount >= 2) this.startRoom(conn.room, room);
+    } else if (msg.type === 'setConfig') {
+      const room = conn.room !== undefined ? this.rooms.get(conn.room) : undefined;
+      if (!room || conn.id !== room.match.host) return; // 仅房主
+      room.match.setConfig(msg.config);
+      this.sendRoomStateToAll(room);
+    } else if (msg.type === 'startGame') {
+      const room = conn.room !== undefined ? this.rooms.get(conn.room) : undefined;
+      if (!room || conn.id !== room.match.host) return; // 仅房主
+      if (room.match.currentPhase !== 'lobby' || room.match.playerCount < 2) return;
+      this.startRoom(conn.room!, room);
     }
   }
 
@@ -97,7 +105,7 @@ export class GameServer {
   /** 开一拍：广播 beatStart（+ Bot 出招），等 beatMs 后结算。 */
   private beginBeat(room: Room): void {
     this.announceBeat(room);
-    room.timer = setTimeout(() => this.endBeat(room), this.beatMs);
+    room.timer = setTimeout(() => this.endBeat(room), room.match.config.beatMs);
   }
 
   /** 结算一拍 → 广播揭示，停顿 revealMs 让玩家看清，再开下一拍 / 公布结果。 */
@@ -119,7 +127,7 @@ export class GameServer {
     this.broadcast(room, {
       type: 'beatStart',
       beat: room.match.currentBeat,
-      deadlineMs: Date.now() + this.beatMs,
+      deadlineMs: Date.now() + room.match.config.beatMs,
     });
     this.submitBots(room);
   }
@@ -150,6 +158,7 @@ export class GameServer {
     let room = this.rooms.get(code);
     if (!room) {
       room = { match: new Match(), conns: new Map(), timer: null, bots: new Set() };
+      room.match.setConfig({ mode: 'bojue', beatMs: this.beatMs, bannedSkills: [] });
       this.rooms.set(code, room);
     }
     return room;

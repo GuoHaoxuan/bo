@@ -1,13 +1,18 @@
 import { useState } from 'react';
 import { useGame, type Status } from './useGame';
 import { Arena } from './Arena';
+import { Lobby } from './Lobby';
 
 export function App() {
-  const { view, join, playVsAi, submit } = useGame();
+  const game = useGame();
+  const { view } = game;
   if (view.status === 'menu' || view.status === 'connecting' || view.status === 'error') {
-    return <Menu onJoin={join} onPlayVsAi={playVsAi} status={view.status} />;
+    return <Menu onJoin={game.join} onPlayVsAi={game.playVsAi} status={view.status} />;
   }
-  return <Arena view={view} submit={submit} />;
+  if (view.status === 'lobby') {
+    return <Lobby game={game} />;
+  }
+  return <Arena view={view} submit={game.submit} />;
 }
 
 function Menu({

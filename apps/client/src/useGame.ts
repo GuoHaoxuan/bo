@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ClientMessage, PublicState, ServerMessage } from '@bo/protocol';
+import type { ClientMessage, PublicState, RoomConfig, ServerMessage } from '@bo/protocol';
 import type { Action, Resolution } from '@bo/rules';
 import { beatTick } from './audio';
 
@@ -13,6 +13,7 @@ export type Status = 'menu' | 'connecting' | 'lobby' | 'playing' | 'gameOver' | 
 
 export interface GameView {
   status: Status;
+  room: string;
   you: number;
   state: PublicState | null;
   beat: number;
@@ -24,10 +25,10 @@ export interface GameView {
 }
 
 const MAX_HISTORY = 8;
-
 const WS_URL = `ws://${location.hostname}:8080`;
 const INITIAL: GameView = {
   status: 'menu',
+  room: '',
   you: -1,
   state: null,
   beat: 0,
@@ -38,19 +39,23 @@ const INITIAL: GameView = {
   winner: null,
 };
 
-export function useGame(): {
+export interface GameApi {
   view: GameView;
   join: (room: string, name: string) => void;
   playVsAi: (name: string) => void;
   submit: (a: Action) => void;
-} {
+  setConfig: (config: RoomConfig) => void;
+  startGame: () => void;
+}
+
+export function useGame(): GameApi {
   const wsRef = useRef<WebSocket | null>(null);
   const [view, setView] = useState<GameView>(INITIAL);
 
-  const connect = useCallback((messages: ClientMessage[]) => {
+  const connect = useCallback((room: string, messages: ClientMessage[]) => {
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
-    setView((v) => ({ ...v, status: 'connecting' }));
+    setView((v) => ({ ...v, status: 'connecting', room }));
     ws.onopen = () => {
       for (const m of messages) ws.send(JSON.stringify(m));
     };
@@ -63,12 +68,12 @@ export function useGame(): {
     };
   }, []);
 
-  const join = useCallback((room: string, name: string) => connect([{ type: 'joinRoom', room, name }]), [connect]);
+  const join = useCallback((room: string, name: string) => connect(room, [{ type: 'joinRoom', room, name }]), [connect]);
 
   const playVsAi = useCallback(
     (name: string) => {
       const room = 'solo-' + Math.random().toString(36).slice(2, 8);
-      connect([{ type: 'joinRoom', room, name: name || '你' }, { type: 'addBot' }]);
+      connect(room, [{ type: 'joinRoom', room, name: name || '你' }, { type: 'addBot' }]);
     },
     [connect],
   );
@@ -82,8 +87,16 @@ export function useGame(): {
     });
   }, []);
 
+  const setConfig = useCallback((config: RoomConfig) => {
+    wsRef.current?.send(JSON.stringify({ type: 'setConfig', config } satisfies ClientMessage));
+  }, []);
+
+  const startGame = useCallback(() => {
+    wsRef.current?.send(JSON.stringify({ type: 'startGame' } satisfies ClientMessage));
+  }, []);
+
   useEffect(() => () => wsRef.current?.close(), []);
-  return { view, join, playVsAi, submit };
+  return { view, join, playVsAi, submit, setConfig, startGame };
 }
 
 function reduce(v: GameView, msg: ServerMessage): GameView {

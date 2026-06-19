@@ -1,0 +1,50 @@
+.lobby {
+  width: min(480px, 94vw);
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+}
+.lobby__title {
+  font-size: 1.6rem;
+  text-align: center;
+}
+.lobby__code {
+  color: var(--red);
+  -webkit-text-stroke: 1.5px var(--ink);
+  paint-order: stroke fill;
+}
+.lobby__players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.pchip {
+  font-family: 'ZCOOL KuaiLe', sans-serif;
+  background: var(--paper);
+  border: var(--line) solid var(--ink);
+  border-radius: 999px;
+  padding: 4px 14px;
+  box-shadow: var(--shadow-sm);
+}
+.pchip--you {
+  background: var(--yellow);
+}
+.setting {
+  display: grid;
+  gap: 6px;
+}
+.setting__label {
+  font-size: 1rem;
+  opacity: 0.75;
+}
+.setting__opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.setting__opts .chip {
+  min-width: 0;
+  padding: 0.4rem 0.7rem;
+  font-size: 1rem;
+}

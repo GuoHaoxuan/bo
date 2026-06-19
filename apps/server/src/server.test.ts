@@ -60,7 +60,12 @@ describe('GameServer (integration)', () => {
     a.send({ type: 'joinRoom', room: 'r1', name: 'A' });
     b.send({ type: 'joinRoom', room: 'r1', name: 'B' });
 
-    // 自动开局 → beat 0 的 beatStart
+    // A 是房主：等两人都到（收到 1人→2人 两条 roomState）后手动开始
+    await a.waitFor('roomState');
+    await a.waitFor('roomState');
+    a.send({ type: 'startGame' });
+
+    // 开局 → beat 0 的 beatStart
     await a.waitFor('beatStart');
     await b.waitFor('beatStart');
 

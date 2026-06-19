@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react';
 import type { Action } from '@bo/rules';
-import type { GameView } from './useGame';
+import type { GameView, Reveal } from './useGame';
 import { MOVES, actionLabel, actionAccent } from './skills';
 
-const BEAT_FALLBACK = 3000;
+const BEAT_FALLBACK = 1800;
 
 export function Arena({ view, submit }: { view: GameView; submit: (a: Action) => void }) {
   const players = view.state?.players ?? [];
   const yourQi = players[view.you]?.qi ?? 0;
   const isOver = view.status === 'gameOver';
+  const banned = new Set<string>(view.state?.config.bannedSkills ?? []);
+
+  const hist = view.history;
+  const latest = hist.length > 0 ? hist[hist.length - 1] : undefined;
+  const older = hist.slice(0, -1);
 
   // 节拍倒计时条
   const total = view.beatDurationMs || BEAT_FALLBACK;
@@ -27,19 +32,6 @@ export function Arena({ view, submit }: { view: GameView; submit: (a: Action) =>
     return () => cancelAnimationFrame(raf);
   }, [view.status, view.deadlineMs, total]);
 
-  if (view.status === 'lobby') {
-    return (
-      <div className="screen">
-        <div className="speedlines" />
-        <div className="panel pop-in" style={{ padding: 28, textAlign: 'center', maxWidth: 420 }}>
-          <div className="pow" style={{ fontSize: 40, color: 'var(--cyan)' }}>等 对 手…</div>
-          <p style={{ marginTop: 14 }}>已进房，另一个人输入同一个暗号就开打。</p>
-          <p className="hint" style={{ marginTop: 8 }}>当前 {players.length} 人</p>
-        </div>
-      </div>
-    );
-  }
-
   const result = !isOver
     ? null
     : view.winner === null
@@ -52,6 +44,8 @@ export function Arena({ view, submit }: { view: GameView; submit: (a: Action) =>
   const order: number[] = [];
   for (let i = 0; i < players.length; i++) if (i !== view.you) order.push(i);
   if (view.you >= 0 && view.you < players.length) order.push(view.you);
+
+  const moveOf = (rev: Reveal, pid: number): Action | undefined => rev.actions.find((x) => x.id === pid)?.action;
 
   return (
     <div className="arena">
@@ -67,37 +61,56 @@ export function Arena({ view, submit }: { view: GameView; submit: (a: Action) =>
         </div>
       </div>
 
-      <div className="duel">
-        {order.map((pid) => {
-          const p = players[pid];
-          return (
-            <div key={pid} className={`prow${pid === view.you ? ' prow--you' : ''}${p && p.alive ? '' : ' prow--dead'}`}>
-              <div className="prow__id">
-                <div className="prow__name">
-                  {p?.name}
-                  {pid === view.you ? ' (你)' : ''}
-                </div>
-                <div className="prow__qi">{p && p.alive ? renderQi(p.qi) : '💀'}</div>
-              </div>
-              <div className="prow__hist">
-                {view.history.map((rev) => {
-                  const a = rev.actions.find((x) => x.id === pid)?.action;
-                  return (
-                    <div key={rev.beat} className={`hcell ${a ? 'hcell--' + actionAccent(a) : 'hcell--empty'}`}>
-                      {a ? actionLabel(a) : ''}
-                    </div>
-                  );
-                })}
-              </div>
+      <div className="main">
+        {/* 顶部小历史条（较早的几拍） */}
+        <div className="ministrip">
+          {order.map((pid) => (
+            <div key={pid} className="mrow">
+              {older.map((rev) => {
+                const a = moveOf(rev, pid);
+                return (
+                  <div key={rev.beat} className={`mcell ${a ? 'mcell--' + actionAccent(a) : 'mcell--empty'}`}>
+                    {a ? actionLabel(a) : ''}
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+          ))}
+        </div>
+
+        {/* 中央大舞台：最新一拍 */}
+        <div className="stage">
+          {order.map((pid) => {
+            const p = players[pid];
+            const a = latest ? moveOf(latest, pid) : undefined;
+            return (
+              <div key={pid} className={`bigcard${pid === view.you ? ' bigcard--you' : ''}${p && p.alive ? '' : ' bigcard--dead'}`}>
+                <div className="bigcard__id">
+                  {p?.name}
+                  {pid === view.you ? ' (你)' : ''} · {p && p.alive ? renderQi(p.qi) : '💀'}
+                </div>
+                <div
+                  key={latest?.beat ?? -1}
+                  className="bigcard__move pop-in"
+                  style={{ color: a ? (a.kind === 'attack' ? 'var(--red)' : 'var(--cyan)') : 'rgba(22,19,15,.35)' }}
+                >
+                  {a ? actionLabel(a) : '…'}
+                </div>
+              </div>
+            );
+          })}
+          {latest && (
+            <div key={latest.beat} className="stage__outcome pop-in">
+              {outcomeText(latest, players)}
+            </div>
+          )}
+        </div>
       </div>
 
       {!isOver && (
         <div className="actionwrap">
           <div className="actions">
-            {MOVES.map((m) => {
+            {MOVES.filter((m) => m.action.kind !== 'attack' || !banned.has(m.action.skill)).map((m) => {
               const afford = m.kind !== 'attack' || yourQi >= m.costWhole * 1000;
               const disabled = view.submittedThisBeat || !afford;
               return (
@@ -124,6 +137,15 @@ export function Arena({ view, submit }: { view: GameView; submit: (a: Action) =>
       )}
     </div>
   );
+}
+
+function outcomeText(reveal: Reveal, players: ReadonlyArray<{ name: string }>): string {
+  const name = (id: number): string => players[id]?.name ?? `P${id}`;
+  const out: string[] = [];
+  for (const id of reveal.resolution.rong) out.push(`${name(id)} 溶了（出招失败）`);
+  for (const id of reveal.resolution.combatDeaths) out.push(`${name(id)} 被打死!`);
+  for (const id of reveal.resolution.dui) out.push(`${name(id)} 被兑（清空气）`);
+  return out.length ? out.join('，') : '都安全，继续！';
 }
 
 function renderQi(milli: number): string {

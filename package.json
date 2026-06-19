@@ -5,6 +5,10 @@
   "description": "「波」online — a beat-driven, simultaneous-reveal turn-based game",
   "type": "module",
   "scripts": {
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "dev": "concurrently -k -n server,client -c green,magenta \"pnpm --filter @bo/server start\" \"pnpm --filter @bo/client dev\""
+  },
+  "devDependencies": {
+    "concurrently": "latest"
   }
 }
